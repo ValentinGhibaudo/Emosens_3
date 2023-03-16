@@ -15,7 +15,7 @@ def convert_vhdr(run_key, **p):
 
 
 def test_convert_vhdr():
-    run_key = 'P02_baseline'
+    run_key = 'P03_music'
     ds = convert_vhdr(run_key, **convert_vhdr_params)
     print(ds)
 
@@ -104,9 +104,10 @@ def compute_ica_figure(run_key, **p):
 
 def test_compute_ica_figure():
 
-    run_key = 'P02_odor'
-
-    compute_ica_figure(run_key, **ica_figure_params)
+    # run_key = 'P02_odor'
+    
+    for run_key in run_keys:
+        compute_ica_figure(run_key, **ica_figure_params)
 
 
 
@@ -139,8 +140,9 @@ def compute_preproc(run_key, **p):
 
     # CONCAT DATA
     ds = xr.Dataset()
-    ds['eeg_clean'] = xr.DataArray(data = data, dims = ['chan','time'] ,
-                                            coords = {'chan':p['eeg_chans'], 'time':times}, attrs = {'srate':srate})
+    ds['eeg_clean'] = xr.DataArray(data = data, dims = ['chan','time'],
+                                   coords = {'chan':p['eeg_chans'], 'time':times}, 
+                                   attrs = {'srate':srate})
 
     return ds
 

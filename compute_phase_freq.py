@@ -13,7 +13,7 @@ from params import *
 from bibliotheque import init_nan_da
 import physio
 
-def complex_mw(time, n_cycles , freq, a= 1, m = 0): 
+def complex_mw(time, n_cycles , freq, a = 1, m = 0): 
     """
     Create a complex morlet wavelet by multiplying a gaussian window to a complex sinewave of a given frequency
     

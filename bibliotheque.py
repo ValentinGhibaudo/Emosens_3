@@ -5,6 +5,23 @@ import numpy as np
 from configuration import base_folder, data_path
 from params import *
 
+def df_baseline(df, indexes, metrics, mode = 'ratio'):
+    odor = df[df['session'] == 'odor'].set_index(indexes)
+    music = df[df['session'] == 'music'].set_index(indexes)
+    baseline = df[df['session'] == 'baseline'].set_index(indexes)
+    
+    if mode == 'ratio':
+        data_odor = odor.values / baseline.values
+        data_music = music.values / baseline.values
+    elif mode == 'substract':
+        data_odor = odor.values - baseline.values
+        data_music = music.values - baseline.values
+    
+    df_odor = pd.DataFrame(data = data_odor, columns = metrics, index = odor.index)
+    df_music = pd.DataFrame(data = data_music, columns = metrics, index = music.index)
+    
+    return pd.concat([df_odor, df_music]).reset_index()
+
 def init_nan_da(coords, name = None):
     dims = list(coords.keys())
     coords = coords

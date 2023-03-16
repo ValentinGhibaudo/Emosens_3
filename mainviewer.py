@@ -14,22 +14,10 @@ from ephyviewer import MainViewer, TraceViewer, TimeFreqViewer, EpochViewer, Eve
 
 #~ from myqt import QT, DebugDecorator
 
-from params import eeg_chans
+from params import eeg_chans, session_duration
 from preproc import convert_vhdr_job, preproc_job
 from compute_resp_features import respiration_features_job
 from compute_rri import ecg_job, rri_signal_job
-from store_timestamps import timestamps_job
-
-
-
-
-#~ def get_session_from_odor(participant, odor):
-    #~ file = base_folder / 'Tables' / 'metadata.xlsx'
-    #~ df = pd.read_excel(file)
-    #~ return df[df['participant'] == participant].reset_index().T.reset_index().set_index(0).loc[odor,'index']
-
-#~ def load_triggs(participant, session):
-    #~ return pd.read_excel(f'../Tables/timestamps/{participant}_{session}_timestamps.xlsx', index_col = 0)
 
 
 
@@ -48,7 +36,7 @@ def get_viewer_from_run_key(run_key, parent=None):
     
     raw_dataset = convert_vhdr_job.get(run_key)
     
-    raw_data = raw_dataset['raw']
+    raw_data = raw_dataset['raw'].sel(time = slice(0, session_duration))[:,:-1]
     srate = raw_dataset['raw'].attrs['srate']
     # print(raw_data)
 
@@ -67,7 +55,7 @@ def get_viewer_from_run_key(run_key, parent=None):
     scatter_channels_resp = {0: [0], 1: [0]}
     scatter_colors_resp = {0: '#FF0000', 1: '#00FF00'}
 
-    sig_resp = raw_data.sel(chan='RespiNasale').values[:, None]
+    sig_resp = raw_data.sel(chan='RespiNasale').values[:, None] * -1
     # print(sig_resp.shape)
     
     view1 = TraceViewer.from_numpy( sig_resp, srate, t_start, 'resp', channel_names=['resp'],
@@ -116,19 +104,19 @@ def get_viewer_from_run_key(run_key, parent=None):
     
     
     
-    # ###### viewer3
-    # channel_names = eeg_chans
+    # # ###### viewer3
+    # # channel_names = eeg_chans
     
-    ds_raw_eeg = convert_vhdr_job.get(run_key)
-    eeg_raw = ds_raw_eeg['raw'].sel(chan=eeg_chans).values.T
-    srate = ds_raw_eeg['raw'].attrs['srate']
+    # ds_raw_eeg = convert_vhdr_job.get(run_key)
+    # eeg_raw = ds_raw_eeg['raw'].sel(chan=eeg_chans).values.T
+    # srate = ds_raw_eeg['raw'].attrs['srate']
 
-    view3 = TraceViewer.from_numpy(eeg_raw,  srate, t_start, 'Raw eeg', channel_names=eeg_chans)
-    win.add_view(view3)
-    view3.params['display_labels'] = True
-    view3.params['scale_mode'] = 'by_channel'
-    for c, chan_name in enumerate(eeg_chans):
-        view3.by_channel_params[ f'ch{c}' ,'visible'] = c < 3
+    # view3 = TraceViewer.from_numpy(eeg_raw,  srate, t_start, 'Raw eeg', channel_names=eeg_chans)
+    # win.add_view(view3)
+    # view3.params['display_labels'] = True
+    # view3.params['scale_mode'] = 'by_channel'
+    # for c, chan_name in enumerate(eeg_chans):
+    #     view3.by_channel_params[ f'ch{c}' ,'visible'] = c < 3
     
     ###### viewer4
     #~ channel_names = eeg_chans
@@ -161,38 +149,10 @@ def get_viewer_from_run_key(run_key, parent=None):
         view5.by_channel_params[ f'ch{c}' ,'visible'] = c < 1
 
     
-        
-    #### viewer 6
-    #~ timestamps = load_triggs(run_key, session)
-    timestamps = timestamps_job.get(run_key).to_dataframe()
     
-    periods = []
-    for bloc in ['Free','Slow','Comfort','Fast']:
-        mask = timestamps['bloc'] == bloc
-        d = {
-            'time' : timestamps.loc[mask, 'timestamp'].values,
-            'duration' : timestamps.loc[mask, 'duration'].values,
-            'label': timestamps.loc[mask, 'bloc'].values,
-            'name': bloc,
-        }
-        periods.append(d)
-
-    view6 = EpochViewer.from_numpy(periods, 'Bloc')
-    win.add_view(view6)
-
-    all_events = [
-        {
-            'time' : timestamps.loc[:, 'timestamp'].values,
-            'duration' : timestamps.loc[:, 'duration'].values,
-            'label': timestamps.loc[:, 'bloc'].values,
-            'name': 'event',
-        }
-    ]
-    view7 = EventList.from_numpy(all_events, name='events')
-    win.add_view(view7,  location='bottom',  orientation='horizontal')
 
 
-    win.set_xsize(60.)
+    win.set_xsize(30.)
 
     win.auto_scale()
     
@@ -205,7 +165,7 @@ def get_viewer_from_run_key(run_key, parent=None):
 
 def test_get_viewer():
     
-    run_key = 'P02_ses03'
+    run_key = 'P04_odor'
 
     # ds = respiration_features_job.get(run_key)
     # print(ds)
