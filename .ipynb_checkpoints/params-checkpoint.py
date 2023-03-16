@@ -7,6 +7,9 @@ session_keys = ['baseline','music','odor']
 
 run_keys = [f'{sub_key}_{ses_key}' for sub_key in subject_keys for ses_key in session_keys]
 
+baseline_keys = [f'{sub_key}_baseline' for sub_key in subject_keys]
+stim_keys = [f'{sub_key}_{stim_key}' for sub_key in subject_keys for stim_key in ['music','odor']]
+
 
 # USEFUL LISTS & DICTS
 eeg_chans = ['Fp1', 'Fz', 'F3', 'F7', 'FT9', 'FC5', 'FC1', 'C3', 'T7', 
@@ -216,15 +219,9 @@ coherence_at_resp_params = {
 }
 
 
-hilbert_at_resp_mi = {
-    'resp_chan':'RespiNasale',
-    'low_pass_freq': 15.,
-    'filter_order' : 5,
-    'smooth_sigma_ms': 100.0,
-    'fbands':fbands,
-}
 
 time_freq_params = {
+    'chans':['F3','F4','C3','C4','T7','T8','P7','P8','O1','O2'],
     'decimate_factor':2,
     'n_freqs':150,
     'f_start':4,
@@ -236,14 +233,18 @@ time_freq_params = {
 
 phase_freq_params = {
     'time_freq_params':time_freq_params,
-    'mode_normalization':'z_transform',
     'n_phase_bins':200,
     'segment_ratios':0.4,
-
 }
 
-itpc_params = {
-    'time_freq_params':time_freq_params,
-    'phase_freq_params':phase_freq_params
+phase_freq_fig_params = {
+    'baseline_mode':'rz_score',
+    'compress_cycle_mode':'med_cycle',
+    'stim_sessions':['music','odor'],
+    'delta_colorlim':0.
 }
+
+
+
+
 

@@ -6,152 +6,183 @@ from scipy import signal
 import numpy as np
 
 import jobtools
-from preproc import preproc_job, convert_vhdr_job
-from store_timestamps import timestamps_job
-from compute_resp_features import label_respiration_features_job
+
+from preproc import preproc_job
+from compute_resp_features import respiration_features_job
+
 from params import *
-from bibliotheque import init_nan_da
+from bibliotheque import init_nan_da, complex_mw, define_morlet_family, mad
 import physio
 
-def complex_mw(time, n_cycles , freq, a = 1, m = 0): 
-    """
-    Create a complex morlet wavelet by multiplying a gaussian window to a complex sinewave of a given frequency
-    
-    ------------------------------
-    a = amplitude of the wavelet
-    time = time vector of the wavelet
-    n_cycles = number of cycles in the wavelet
-    freq = frequency of the wavelet
-    m = 
-    """
-    s = n_cycles / (2 * np.pi * freq)
-    GaussWin = a * np.exp( -(time - m)** 2 / (2 * s**2)) # real gaussian window
-    complex_sinewave = np.exp(1j * 2 *np.pi * freq * time) # complex sinusoidal signal
-    cmw = GaussWin * complex_sinewave
-    return cmw
+def sig_to_tf(sig, p, srate):
+    srate_down = srate / p['decimate_factor']
+    sig_down = signal.decimate(sig, p['decimate_factor'])
+    time_vector_down = np.arange(sig_down.size) / srate_down
 
-def define_morlet_family(freqs, cycles , srate, return_time = False):
-    tmw = np.arange(-10,10,1/srate)
-    mw_family = np.zeros((freqs.size, tmw.size), dtype = 'complex')
-    for i, fi in enumerate(freqs):
-        n_cycles = cycles[i]
-        mw_family[i,:] = complex_mw(tmw, n_cycles = n_cycles, freq = fi)
+    freqs = np.logspace(np.log10(p['f_start']), np.log10(p['f_stop']), num = p['n_freqs'], base = 10)
+    cycles = np.logspace(np.log10(p['c_start']), np.log10(p['c_stop']), num = p['n_freqs'], base = 10)
+
+    mw_family = define_morlet_family(freqs = freqs , cycles = cycles, srate=srate_down)
+
+    sigs = np.tile(sig_down, (p['n_freqs'],1))
+    tf = signal.fftconvolve(sigs, mw_family, mode = 'same', axes = 1)
+    return {'t':time_vector_down, 'f':freqs, 'tf':tf}
+
+
+def compute_baseline_power(run_key, **p):
+    
+    eeg = preproc_job.get(run_key)['eeg_clean']
+    srate = eeg.attrs['srate']
+    
+    baselines = None 
+    
+    for chan in p['chans']:
         
-    if return_time:
-        return tmw, mw_family
-    else:
-        return mw_family
+        sig = eeg.sel(chan=chan).values
 
-def mad(data, axis = 1):
-    med = np.median(data, axis = axis)
+        tf_dict = sig_to_tf(sig, p, srate)
+        
+        power = np.abs(tf_dict['tf']) ** p['amplitude_exponent']
+        
+        if baselines is None:
+            baselines = init_nan_da({'mode':['mean','med','sd','mad'], 
+                                     'chan':p['chans'], 
+                                     'freq':tf_dict['f']})
+            
+        baselines.loc['mean',chan , :] = np.mean(power, axis = 1)
+        baselines.loc['med',chan , :] = np.median(power, axis = 1)
+        baselines.loc['sd',chan , :] = np.std(power, axis = 1)
+        baselines.loc['mad',chan , :] = mad(power.T) # time must be on 0 axis
+        
+    ds = xr.Dataset()
+    ds['baseline'] = baselines
     
-    return np.median()
+    return ds
 
-def apply_baseline_normalization(power, power_baseline, mode, time_axis = 0):
-    if mode == 'dB':
-        baseline_f = np.mean(10 * np.log10(power_baseline), axis = time_axis)
-        activity_tf = 10 * np.log10(power)
-        power_norm = activity_tf - baseline_f
-    elif mode == 'prct_change':
-        baseline_f = np.mean(power_baseline, axis = time_axis)
-        power_norm = 100 * (power - baseline_f) / baseline_f
-    elif mode == 'z_transform':
-        baseline_f_mean = np.mean(power_baseline, axis = time_axis)
-        baseline_f_std = np.std(power_baseline , axis = time_axis)
-        power_norm = (power - baseline_f_mean) / baseline_f_std
-    elif mode == 'z_transform_robust':
-        baseline_f_med = np.median(power_baseline, axis = time_axis)
-        baseline_f_mad = np.median(np.abs(power_baseline - np.median(power_baseline)))
+
+def test_compute_baseline_power():
+    run_key = 'P02_baseline'
+    ds = compute_baseline_power(run_key, **time_freq_params)
+    print(ds)
     
-        baseline_f_mean = np.mean(power_baseline, axis = time_axis)
-        baseline_f_std = np.std(power_baseline , axis = time_axis)
-        power_norm = (power - baseline_f_mean) / baseline_f_std
+
+baseline_power_job = jobtools.Job(precomputedir, 'baseline_power',time_freq_params, compute_baseline_power)
+jobtools.register_job(baseline_power_job)
+
+
+def apply_baseline_normalization(power, baseline, mode):   
+    if mode == 'z_score':
+        power_norm = (power - baseline['mean']) / baseline['sd']
+            
+    elif mode == 'rz_score':
+        power_norm = (power - baseline['med']) / baseline['mad']     
     return power_norm
 
 
     
 def compute_phase_frequency(run_key, **p):
-    ds_eeg = preproc_job.get(run_key)
-    eeg = ds_eeg['eeg_clean']
     
-    cycle_features = label_respiration_features_job.get(run_key).to_dataframe()
-    srate_down = srate / p['decimate_factor']
-    time_vector = eeg.coords['time'].values
+    tf_params = p['time_freq_params']
     
-    phase_freq = None 
+    participant, session = run_key.split('_')
+    eeg = preproc_job.get(run_key)['eeg_clean']
+    srate = eeg.attrs['srate']
+    baselines = baseline_power_job.get(f'{participant}_baseline')['baseline']
+    cycle_features = respiration_features_job.get(run_key).to_dataframe()
+    cycle_times = cycle_features[['inspi_time','expi_time','next_inspi_time']].values
     
-    for chan in eeg.coords['chan'].values:
-        # print(chan)
+    srate_down = srate / tf_params['decimate_factor']
+    
+    baseline_modes = ['z_score','rz_score']
+    
+    phase_freq_power = None 
+    phase_freq_itpc = None
+    
+    for chan in tf_params['chans']:
         
         sig = eeg.sel(chan=chan).values
-        sig_down = signal.decimate(sig, p['decimate_factor'])
-        time_vector_down = np.arange(sig_down.size) / srate_down
-
-        timestamps = timestamps_job.get(run_key).to_dataframe().set_index(['bloc','trial'])
         
-        masks = []
-        for bloc in blocs:
-            for trial in timestamps.loc[bloc,:].index:
-                t_start = timestamps.loc[(bloc, trial), 'timestamp']
-                t_stop = t_start + timestamps.loc[(bloc, trial), 'duration']
-                mask = (time_vector_down > t_start) & (time_vector_down < t_stop)
-                masks.append(mask)
-                
-        mask_baseline = np.any(np.array(masks), axis = 0)
+        tf_dict = sig_to_tf(sig, tf_params, srate)
         
-        freqs = np.logspace(np.log10(p['f_start']), np.log10(p['f_stop']), num = p['n_freqs'], base = 10)
-        cycles = np.logspace(np.log10(p['c_start']), np.log10(p['c_stop']), num = p['n_freqs'], base = 10)
+        power = np.abs(tf_dict['tf']) ** tf_params['amplitude_exponent']
+        angles = np.angle(tf_dict['tf'])
         
-        mw_family = define_morlet_family(freqs = freqs , cycles = cycles, srate=srate_down)
+                      
+        baseline = {'mean':baselines.loc['mean',chan].values,
+                    'med':baselines.loc['med',chan].values,
+                    'sd':baselines.loc['sd',chan].values,
+                    'mad':baselines.loc['mad',chan].values
+                   }
         
-        sigs = np.tile(sig_down, (p['n_freqs'],1))
-        tf = signal.fftconvolve(sigs, mw_family, mode = 'same', axes = 1)
-        power = np.abs(tf) ** p['amplitude_exponent']
+        for mode in baseline_modes:
         
-        power_norm = apply_baseline_normalization(sig = power.T, baseline = power.T[mask_baseline,:], mode = p['mode_normalization'])
+            power_norm = apply_baseline_normalization(power = power.T, baseline = baseline, mode = mode)
         
-        cycle_times = cycle_features[['inspi_time','expi_time','next_inspi_time']].values
-        # print((cycle_times[1:, 0] == cycle_times[:-1, -1]).all())
-        deformed_data_stacked = physio.deform_traces_to_cycle_template(data = power_norm, 
-                                                                       times = time_vector_down, 
-                                                                       cycle_times=cycle_times, 
-                                                                       segment_ratios = p['segment_ratios'], 
-                                                                       points_per_cycle = p['n_phase_bins'])
-        
-        for bloc in p['blocs']:
-            inds_cycle_bloc = cycle_features[cycle_features['bloc'] == bloc].index
-            deformed_data_stacked_bloc = deformed_data_stacked[inds_cycle_bloc,:,:]
-            deformed_data_mean = np.mean(deformed_data_stacked_bloc, axis = 0)
             
-            if phase_freq is None: 
-                phase_freq = init_nan_da({'chan':eeg.coords['chan'].values, 'bloc':p['blocs'], 'freq':freqs, 'phase':np.linspace(0,1,p['n_phase_bins'])})
-                
-            phase_freq.loc[chan, bloc, :,:] = deformed_data_mean.T
+            deformed_data_stacked = physio.deform_traces_to_cycle_template(data = power_norm, 
+                                                                           times = tf_dict['t'], 
+                                                                           cycle_times=cycle_times, 
+                                                                           segment_ratios = p['segment_ratios'], 
+                                                                           points_per_cycle = p['n_phase_bins'])
+        
             
+            if phase_freq_power is None: 
+                phase_freq_power = init_nan_da({'baseline_mode':baseline_modes, 
+                                          'compress_cycle_mode':['mean_cycle','med_cycle','q75_cycle'],
+                                          'chan':tf_params['chans'],
+                                          'freq':tf_dict['f'], 
+                                          'phase':np.linspace(0,1,p['n_phase_bins'])})
+                
+            phase_freq_power.loc[mode, 'mean_cycle', chan, :,:] = np.mean(deformed_data_stacked, axis = 0).T
+            phase_freq_power.loc[mode, 'med_cycle', chan, :,:] = np.median(deformed_data_stacked, axis = 0).T
+            phase_freq_power.loc[mode, 'q75_cycle', chan, :,:] = np.quantile(deformed_data_stacked, q = 0.75, axis = 0).T
+            
+        if phase_freq_itpc is None:
+            phase_freq_itpc = init_nan_da({
+                          'chan':tf_params['chans'],
+                          'freq':tf_dict['f'], 
+                          'phase':np.linspace(0,1,p['n_phase_bins'])
+            })
+            
+        deformed_data_stacked = physio.deform_traces_to_cycle_template(data = angles.T, 
+                                                                           times = tf_dict['t'], 
+                                                                           cycle_times=cycle_times, 
+                                                                           segment_ratios = p['segment_ratios'], 
+                                                                           points_per_cycle = p['n_phase_bins'])
+        
+        itpc = np.abs(np.mean(np.exp(np.angle(deformed_data_stacked)* 1j), axis = 0))
+        phase_freq_itpc.loc[chan, :,:] = itpc.T
+        
     ds = xr.Dataset()
-    ds['phase_freq'] = phase_freq
+    ds['power'] = phase_freq_power
+    ds['itpc'] = phase_freq_itpc
     
     return ds
 
-def test_compute_phase_freq():
-    run_key = 'P13_ses02'
+
+def test_compute_phase_frequency():
+    run_key = 'P02_music'
     ds = compute_phase_frequency(run_key, **phase_freq_params)
-    # ds = phase_freq_job.get(run_key)
     print(ds)
     
 
-def compute_all():
-    jobtools.compute_job_list(phase_freq_job, run_keys, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(phase_freq_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 2)
-
-
-phase_freq_job = jobtools.Job(precomputedir, 'phase_freqs',phase_freq_params, compute_phase_frequency)
+phase_freq_job = jobtools.Job(precomputedir, 'phase_freq', phase_freq_params, compute_phase_frequency)
 jobtools.register_job(phase_freq_job)
 
 
 
+
+def compute_all():
+    # jobtools.compute_job_list(baseline_power_job, baseline_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(baseline_power_job, baseline_keys, force_recompute=False, engine='joblib', n_jobs = 5)
+    
+    # jobtools.compute_job_list(phase_freq_job, stim_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(phase_freq_job, stim_keys, force_recompute=False, engine='joblib', n_jobs = 3)
+
+
 if __name__ == '__main__':
-    # test_compute_phase_freq()
+    # test_compute_baseline_power()
+    # test_compute_phase_frequency()
     compute_all()
         
         

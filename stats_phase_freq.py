@@ -3,32 +3,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from compute_phase_freq import phase_freq_job
-from compute_resp_features import label_respiration_features_job
-from bibliotheque import get_odor_from_session, init_nan_da
-from params import subject_keys, blocs, odeurs, eeg_chans, run_keys 
+from compute_resp_features import respiration_features_job
+from bibliotheque import init_nan_da
+from params import *
 from configuration import base_folder
 import os
+
+p = phase_freq_fig_params
+baseline_mode = p['baseline_mode']
+compress_cycle_mode = p['compress_cycle_mode']
 
 def get_N_resp_cycles(run_keys):
     concat = []
     for run_key in run_keys:
         participant, session = run_key.split('_')
-        resp = label_respiration_features_job.get(run_key).to_dataframe()
-        resp.insert(0, 'odor', get_odor_from_session(run_key))
+        resp = respiration_features_job.get(run_key).to_dataframe()
         resp.insert(0, 'session', session)
         resp.insert(0, 'participant', participant)
         concat.append(resp)
 
     all_resp = pd.concat(concat)
     
-    N_cycles = all_resp.value_counts(subset = ['participant','session','odor','bloc']).to_frame().reset_index().rename(columns ={0:'N'}).set_index(['participant','odor','bloc'])
+    N_cycles = all_resp.value_counts(subset = ['participant','session']).to_frame().reset_index().rename(columns ={0:'N'}).set_index(['participant','session'])
     return N_cycles
 
 N_cycles = get_N_resp_cycles(run_keys)
-N_cycles_pooled = N_cycles.groupby(['odor','bloc']).sum(numeric_only = True)
+N_cycles_pooled = N_cycles.groupby(['session']).sum(numeric_only = True)
 
-
-fig_folder = base_folder / 'Figures' / 'Phase_freq'
+fig_folder = base_folder / 'Figures' / 'phase_freq'
 
 # COLORBAR POS
 ax_x_start = 1.05
@@ -36,58 +38,68 @@ ax_x_width = 0.02
 ax_y_start = 0
 ax_y_height = 1
 
-# QUANTILE COLORLIM
-delta_colorlim = 0.
 
 # CONCAT
 all_phase_freq = None
-for run_key in run_keys:
-    participant = run_key.split('_')[0]
-    odeur = get_odor_from_session(run_key)
 
-    phase_freq = phase_freq_job.get(run_key)['phase_freq']
+for run_key in stim_keys:
+    
+    participant, session = run_key.split('_')
+    phase_freq = phase_freq_job.get(run_key)
+    
+    power = phase_freq['power']
+    itpc = phase_freq['itpc']
     
     if all_phase_freq is None:
         all_phase_freq = init_nan_da({'participant':subject_keys, 
-                                      'odor':odeurs, 
-                                      'chan':phase_freq.coords['chan'].values,
-                                      'bloc':phase_freq.coords['bloc'].values, 
-                                      'freq':phase_freq.coords['freq'].values,
-                                      'phase':phase_freq.coords['phase'].values
+                                      'feature_type':['power','itpc'],
+                                      'session':p['stim_sessions'], 
+                                      'chan':power.coords['chan'].values,
+                                      'freq':power.coords['freq'].values,
+                                      'phase':power.coords['phase'].values
                                      })
         
-    all_phase_freq.loc[participant, odeur, :,:,:,:] = phase_freq.values
-
-    
+    all_phase_freq.loc[participant, 'power', session, :,:,:] = power.loc[baseline_mode , compress_cycle_mode,:,:].values
+    all_phase_freq.loc[participant, 'itpc', session, :,:,:] = itpc.values
+       
 ### FIG 1 = GLOBAL
 print('FIG 1')
 
-mean_phase_freq = all_phase_freq.mean('participant')
+global_phase_freq = all_phase_freq.median('participant')
 
-for chan in eeg_chans:
-    
-    fig, axs = plt.subplots(nrows = len(odeurs), ncols = len(blocs), figsize = (15,7), constrained_layout = True)
-    fig.suptitle(f'Mean phase-frequency power map across {len(subject_keys)} subjects in electrode {chan}', fontsize = 20, y = 1.05) 
-    
-    vmin = mean_phase_freq.sel(chan = chan).quantile(delta_colorlim)
-    vmax = mean_phase_freq.sel(chan = chan).quantile(1 - delta_colorlim)
-    vlim = abs(vmin) if abs(vmin) > abs(vmax) else abs(vmax)
+for feature in ['power','itpc']:
 
-    for r, odeur in enumerate(odeurs):
-        for c, bloc in enumerate(blocs):
+    for chan in global_phase_freq.coords['chan'].values:
 
-            ax = axs[r,c]
-            
-            im = ax.pcolormesh(phase_freq.coords['phase'].values, 
-                               phase_freq.coords['freq'].values,  
-                               mean_phase_freq.loc[odeur, chan, bloc , : ,:].values,
-                               cmap = 'seismic',
+        fig, axs = plt.subplots(ncols = len(p['stim_sessions']), figsize = (15,5), constrained_layout = True)
+
+        fig.suptitle(f'Mean phase-frequency {feature} map across {len(subject_keys)} subjects in electrode {chan}', fontsize = 20, y = 1.05) 
+
+        vmin = global_phase_freq.sel(chan=chan).quantile(p['delta_colorlim'])
+        vmax = global_phase_freq.sel(chan=chan).quantile(1 - p['delta_colorlim'])
+        
+        if vmax > 0 and vmin < 0:
+            vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
+            vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
+            cmap = 'seismic'
+        else:
+            vmin = vmin
+            vmax = vmax
+            cmap = 'viridis'
+        
+        
+        for c, session in enumerate(p['stim_sessions']):
+            ax = axs[c]
+
+            im = ax.pcolormesh(global_phase_freq.coords['phase'].values, 
+                               global_phase_freq.coords['freq'].values,  
+                               global_phase_freq.loc[feature, session, chan, : ,:].values,
+                               cmap = cmap,
                                norm = 'linear',
-                               vmin = -vlim,
-                               vmax = vlim)
+                               vmin = vmin,
+                               vmax = vmax)
             ax.set_yscale('log')
 
-            
             if c == 0:
                 ax.set_yticks([4,8,12, 30, 65, 100 , 150])
                 ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
@@ -95,58 +107,66 @@ for chan in eeg_chans:
             else:
                 ax.set_yticks([])
 
-            if r == len(odeurs) - 1:
-                ax.set_xlabel('Phase')
-            else:
-                ax.set_xticklabels([])
-
-            ax.axvline(x = 0.4, color = 'r')
-            N = N_cycles_pooled.loc[(odeur,bloc), 'N']
-            ax.set_title(f'{bloc} - {odeur} - N : {N}')
+            ax.set_xlabel('Phase')
             
+            ax.axvline(x = 0.4, color = 'r')
+            N = N_cycles_pooled.loc[session, 'N']
+            ax.set_title(f'{session} - N : {N}')
 
-    cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
-    clb = fig.colorbar(im, cax=cbar_ax)
-    clb.ax.set_title('Power (z-normalized)',fontsize=10)        
+        cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+        clb = fig.colorbar(im, cax=cbar_ax)
+        
+        clb_title = f'Power ({baseline_mode})' if feature == 'power' else 'Phase-Clustering' 
+        clb.ax.set_title(clb_title,fontsize=10)        
 
-    file = fig_folder / 'global' / f'{chan}'
-    fig.savefig(file, bbox_inches = 'tight') 
-    plt.close()
+        file = fig_folder / feature / 'global' / f'{chan}.png'
+        fig.savefig(file, bbox_inches = 'tight') 
+        plt.close()
     
     
 ### FIG 2 = BY SUBJECT 
 
 print('FIG 2')
 
-for chan in eeg_chans:
+for feature in ['power','itpc']:
+    for chan in all_phase_freq.coords['chan'].values:
 
-    folder_path = fig_folder / 'by_subject' / f'{chan}' 
+        folder_path = fig_folder / feature / 'by_subject' / chan
 
-    if not os.path.isdir(folder_path):
-        os.mkdir(folder_path)
+        if not os.path.isdir(folder_path):
+            os.mkdir(folder_path)
 
-    for participant in subject_keys:
+        for participant in subject_keys:
 
-        fig, axs = plt.subplots(nrows = len(odeurs), ncols = len(blocs), figsize = (15,7), constrained_layout = True)
-        fig.suptitle(f'Mean phase-frequency power map in {participant} in electrode {chan}', fontsize = 20, y = 1.05) 
+            fig, axs = plt.subplots(ncols = len(p['stim_sessions']), figsize = (15,5), constrained_layout = True)
 
-        vmin = all_phase_freq.sel(chan = chan, participant = participant).quantile(delta_colorlim)
-        vmax = all_phase_freq.sel(chan = chan, participant = participant).quantile(1 - delta_colorlim)
-        vlim = abs(vmin) if abs(vmin) > abs(vmax) else abs(vmax)
+            fig.suptitle(f'Mean phase-frequency {feature} in electrode {chan} in participant {participant}', fontsize = 20, y = 1.05) 
 
-        for r, odeur in enumerate(odeurs):
-            for c, bloc in enumerate(blocs):
+            vmin = all_phase_freq.sel(participant = participant, chan=chan).quantile(p['delta_colorlim'])
+            vmax = all_phase_freq.sel(participant = participant, chan=chan).quantile(1 - p['delta_colorlim'])
 
-                ax = axs[r,c]
+            if vmax > 0 and vmin < 0:
+                vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
+                vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
+                cmap = 'seismic'
+            else:
+                vmin = vmin
+                vmax = vmax
+                cmap = 'viridis'
 
-                im = ax.pcolormesh(phase_freq.coords['phase'].values, 
-                                   phase_freq.coords['freq'].values,  
-                                   all_phase_freq.loc[participant, odeur, chan, bloc , : ,:].values,
-                                   cmap = 'seismic',
+
+            for c, session in enumerate(p['stim_sessions']):
+                ax = axs[c]
+
+                im = ax.pcolormesh(all_phase_freq.coords['phase'].values, 
+                                   all_phase_freq.coords['freq'].values,  
+                                   all_phase_freq.loc[participant, feature, session, chan, : ,:].values,
+                                   cmap = cmap,
                                    norm = 'linear',
-                                   vmin = -vlim,
-                                   vmax = vlim)
+                                   vmin = vmin,
+                                   vmax = vmax)
                 ax.set_yscale('log')
+
                 if c == 0:
                     ax.set_yticks([4,8,12, 30, 65, 100 , 150])
                     ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
@@ -154,21 +174,18 @@ for chan in eeg_chans:
                 else:
                     ax.set_yticks([])
 
-                if r == len(odeurs) - 1:
-                    ax.set_xlabel('Phase')
-                else:
-                    ax.set_xticklabels([])
+                ax.set_xlabel('Phase')
 
-                ax.axvline(x = 0.4, color = 'r')  
-                N = N_cycles.loc[(participant,odeur,bloc), 'N']
-                ax.set_title(f'{bloc} - {odeur} - N : {N}')
+                ax.axvline(x = 0.4, color = 'r')
+                N = N_cycles.loc[(participant,session), 'N']
+                ax.set_title(f'{session} - N : {N}')
 
+            cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+            clb = fig.colorbar(im, cax=cbar_ax)
 
-        cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
-        clb = fig.colorbar(im, cax=cbar_ax)
-        clb.ax.set_title('Power (z-normalized)',fontsize=10)        
+            clb_title = f'Power ({baseline_mode})' if feature == 'power' else 'Phase-Clustering' 
+            clb.ax.set_title(clb_title,fontsize=10)        
 
-        
-        file = folder_path / f'{participant}_{chan}'
-        fig.savefig(file, bbox_inches = 'tight') 
-        plt.close()
+            file = folder_path / f'{participant}.png'
+            fig.savefig(file, bbox_inches = 'tight') 
+            plt.close()

@@ -5,6 +5,41 @@ import numpy as np
 from configuration import base_folder, data_path
 from params import *
 
+def mad(data, axis=0):
+    """
+    Compute median absolute deviation along 0 axis
+    """
+    return np.median(np.abs(data - np.median(data, axis = axis)), axis = axis) * 1.4826
+
+def complex_mw(time, n_cycles , freq, a = 1, m = 0): 
+    """
+    Create a complex morlet wavelet by multiplying a gaussian window to a complex sinewave of a given frequency
+    
+    ------------------------------
+    a = amplitude of the wavelet
+    time = time vector of the wavelet
+    n_cycles = number of cycles in the wavelet
+    freq = frequency of the wavelet
+    m = 
+    """
+    s = n_cycles / (2 * np.pi * freq)
+    GaussWin = a * np.exp( -(time - m)** 2 / (2 * s**2)) # real gaussian window
+    complex_sinewave = np.exp(1j * 2 *np.pi * freq * time) # complex sinusoidal signal
+    cmw = GaussWin * complex_sinewave
+    return cmw
+
+def define_morlet_family(freqs, cycles , srate, return_time = False):
+    tmw = np.arange(-10,10,1/srate)
+    mw_family = np.zeros((freqs.size, tmw.size), dtype = 'complex')
+    for i, fi in enumerate(freqs):
+        n_cycles = cycles[i]
+        mw_family[i,:] = complex_mw(tmw, n_cycles = n_cycles, freq = fi)
+        
+    if return_time:
+        return tmw, mw_family
+    else:
+        return mw_family
+
 def df_baseline(df, indexes, metrics, mode = 'ratio'):
     odor = df[df['session'] == 'odor'].set_index(indexes)
     music = df[df['session'] == 'music'].set_index(indexes)
