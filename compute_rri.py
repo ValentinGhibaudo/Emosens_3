@@ -69,7 +69,7 @@ def compute_rri_signal(run_key, **p):
 def test_compute_rri_signal():
     
     
-    run_key = 'P02_baseline'
+    run_key = 'P10_baseline'
     
     ds = compute_rri_signal(run_key, **rri_signal_params)
     print(ds)
@@ -90,17 +90,11 @@ def compute_all():
     jobtools.compute_job_list(rri_signal_job, run_keys, force_recompute=False, engine='loop')
 
 
- 
-    
-
-
 ecg_job = jobtools.Job(precomputedir, 'ecg', ecg_params, compute_ecg)
 jobtools.register_job(ecg_job)
 
 rri_signal_job = jobtools.Job(precomputedir, 'rri_signal', rri_signal_params, compute_rri_signal)
 jobtools.register_job(rri_signal_job)
-
-
 
 
 if __name__ == '__main__':

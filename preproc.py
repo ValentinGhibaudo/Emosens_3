@@ -106,7 +106,7 @@ def test_compute_ica_figure():
 
     # run_key = 'P02_odor'
     
-    for run_key in run_keys:
+    for run_key in ['P12_baseline','P12_music','P12_odor']:
         compute_ica_figure(run_key, **ica_figure_params)
 
 
@@ -154,20 +154,13 @@ def test_compute_preproc():
 
 
 def compute_all():
-    jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(ica_figure_job, run_keys, force_recompute=False, engine='loop')
-    
-    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs=12)
+        
+    jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs=3)
 
-    # jobtools.compute_job_list(convert_vhdr_job, run_keys[:4], force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='loop')
 
-    # jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='slurm',
-    #                           module_name='preproc', slurm_params={'cpus-per-task':'4', 'mem':'10G'})
-
-    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='slurm',
-    #                           module_name='preproc', slurm_params={'cpus-per-task':'4', 'mem':'10G'})
-
-    
 
 convert_vhdr_job = jobtools.Job(precomputedir, 'convert_vhdr',convert_vhdr_params, convert_vhdr)
 jobtools.register_job(convert_vhdr_job)

@@ -65,7 +65,7 @@ for run_key in stim_keys:
 ### FIG 1 = GLOBAL
 print('FIG 1')
 
-global_phase_freq = all_phase_freq.median('participant')
+global_phase_freq = all_phase_freq.mean('participant')
 
 for feature in ['power','itpc']:
 
@@ -78,14 +78,21 @@ for feature in ['power','itpc']:
         vmin = global_phase_freq.sel(chan=chan).quantile(p['delta_colorlim'])
         vmax = global_phase_freq.sel(chan=chan).quantile(1 - p['delta_colorlim'])
         
-        if vmax > 0 and vmin < 0:
-            vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
-            vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
-            cmap = 'seismic'
-        else:
+        if feature == 'power':
+            if vmax > 0 and vmin < 0:
+                vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
+                vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
+                cmap = 'seismic'
+            else:
+                vmin = vmin
+                vmax = vmax
+                cmap = 'viridis'
+            
+        elif feature == 'itpc':
+            cmap = 'viridis'
             vmin = vmin
             vmax = vmax
-            cmap = 'viridis'
+            
         
         
         for c, session in enumerate(p['stim_sessions']):
@@ -145,15 +152,20 @@ for feature in ['power','itpc']:
             vmin = all_phase_freq.sel(participant = participant, chan=chan).quantile(p['delta_colorlim'])
             vmax = all_phase_freq.sel(participant = participant, chan=chan).quantile(1 - p['delta_colorlim'])
 
-            if vmax > 0 and vmin < 0:
-                vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
-                vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
-                cmap = 'seismic'
-            else:
+            if feature == 'power':
+                if vmax > 0 and vmin < 0:
+                    vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
+                    vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
+                    cmap = 'seismic'
+                else:
+                    vmin = vmin
+                    vmax = vmax
+                    cmap = 'viridis'
+
+            elif feature == 'itpc':
+                cmap = 'viridis'
                 vmin = vmin
                 vmax = vmax
-                cmap = 'viridis'
-
 
             for c, session in enumerate(p['stim_sessions']):
                 ax = axs[c]
