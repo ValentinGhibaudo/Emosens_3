@@ -91,8 +91,6 @@ def compute_phase_frequency(run_key, **p):
     cycle_features = respiration_features_job.get(run_key).to_dataframe()
     cycle_times = cycle_features[['inspi_time','expi_time','next_inspi_time']].values
     
-    srate_down = srate / tf_params['decimate_factor']
-    
     baseline_modes = ['z_score','rz_score']
     
     phase_freq_power = None 

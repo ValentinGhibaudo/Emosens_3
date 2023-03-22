@@ -2,7 +2,7 @@
 
 from configuration import data_path
 
-subject_keys = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P12']
+subject_keys = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12']
 session_keys = ['baseline','music','odor']
 
 run_keys = [f'{sub_key}_{ses_key}' for sub_key in subject_keys for ses_key in session_keys]
@@ -23,13 +23,39 @@ all_chans = ['Fp1', 'Fz', 'F3', 'F7', 'FT9', 'FC5', 'FC1', 'C3', 'T7', 'TP9',
              'CP6','CP2', 'C4', 'T8', 'FT10', 'FC6', 'FC2', 'F4', 'F8', 'Fp2',
              'ECG','RespiNasale','RespiVentrale','GSR','FCI']
 
-participants_label = {'P01':'DB01','P02':'FB02','P03':'ZB03','P04':'EM04','P05':'TM05',
-                      'P06':'AC06','P07':'CB07','P08':'ZB08','P09':'MA09','P10':'AA10',
-                      'P11':'GC11','P12':'AP12','P13':'RA13','P14':'DI14','P15':'RS15',
-                      'P16':'KC16','P17':'LC17','P18':'GM18','P19':'SA19','P20':'DM20',
-                      'P21':'FF21','P22':'NR22','P23':'MT23','P24':'GC24','P25':'CF25',
-                      'P26':'CM26','P27':'RS27','P28':'AY28','P29':'WD29','P30':'AL30',
-                      'P31':'VT31'}
+participants_label = {
+    'P01':'DB01', # OK
+    'P02':'FB02', # OK
+    'P03':'ZB03', # OK
+    'P04':'EM04', # OK
+    'P05':'TM05', # OK
+    'P06':'AC06', # OK
+    'P07':'CB07', # OK
+    'P08':'ZB08', # OK
+    'P09':'MA09', # OK
+    'P10':'AA10', # OK
+    'P11':'MB11', # OK
+    'P12':'AP12', # OK
+    'P13':'RA13',
+    'P14':'DI14',
+    'P15':'RS15',
+    'P16':'KC16',
+    'P17':'LC17',
+    'P18':'GM18',
+    'P19':'SA19',
+    'P20':'DM20',
+    'P21':'FF21',
+    'P22':'NR22',
+    'P23':'MT23',
+    'P24':'GC24',
+    'P25':'CF25',
+    'P26':'CM26',
+    'P27':'RS27',
+    'P28':'AY28',
+    'P29':'WD29',
+    'P30':'AL30',
+    'P31':'VT31'
+    }
 
 
 session_duration = 600.
@@ -38,21 +64,32 @@ session_duration = 600.
 #### PROCESSING PARAMS
 srate = 1000
 
-fbands = {'delta':[1,4],'theta':[4,8], 'alpha':[8,12], 'beta':[12,30], 'low_gamma':[30,45], 'high_gamma':[55,100], 
-          '100_200':[100,200], '200_300':[200,300], '300_400':[300,400], '400_500':[400,499]}
+fbands = {
+    'delta':[1,4],
+    'theta':[4,8],
+    'alpha':[8,12],
+    'beta':[12,30],
+    'low_gamma':[30,45],
+    'high_gamma':[55,100], 
+    '100_200':[100,200],
+    '200_300':[200,300],
+    '300_400':[300,400],
+    '400_500':[400,499]
+    }
 
-ecg_inversion = {'P01':1,
-'P02':1,
-'P03':-1,
-'P04':-1,
-'P05':-1, 
-'P06':-1,
-'P07':1,
-'P08':-1,
-'P09':-1,
-'P10':-1,
-'P11':-1,
-'P12':-1,
+ecg_inversion = { 
+'P01':1, # OK
+'P02':1, # OK
+'P03':-1, # OK
+'P04':-1, # OK
+'P05':-1,  # OK
+'P06':-1, # OK
+'P07':1, # OK
+'P08':-1, # OK
+'P09':-1, # OK
+'P10':-1, # OK
+'P11':1, # OK
+'P12':-1, # OK
 'P13':-1,
 'P14':-1,
 'P15':-1,
@@ -81,7 +118,8 @@ ecg_inversion = {'P01':1,
 n_components_decomposition = 10
 
 # components exclusion
-ica_excluded_component = {'P01':{'baseline':[0,1],'music':[0,1],'odor':[0,1]}, # OK
+ica_excluded_component = {
+'P01':{'baseline':[0,1],'music':[0,1],'odor':[0,1]}, # OK
 'P02':{'baseline':[0,1],'music':[0,3],'odor':[0,2]}, # OK
 'P03':{'baseline':[0,2],'music':[0,1],'odor':[1,3]}, # OK
 'P04':{'baseline':[5],'music':[5],'odor':[0,4]}, # OK
@@ -183,7 +221,6 @@ rri_signal_params = {
 }
 
 
-
 psd_params = {
     'lowest_freq':0.1,
 }
@@ -240,6 +277,12 @@ phase_freq_fig_params = {
 
 eda_params = {
     'session_duration':session_duration
+}
+
+rsa_params = {
+    'rri_signal_params':rri_signal_params,
+    'n_phase_bins':100,
+    'segment_ratios':0.4
 }
 
 

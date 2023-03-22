@@ -76,10 +76,6 @@ def apply_ica(raw_eeg, exclude, participant, session, n_components, save_figures
         plt.savefig(base_folder / 'Figures' / 'ICA' / f'{participant}_{session}_Topo')
         plt.close()
         
-        rows = []
-        for i in range(sources_signals.shape[0]):
-            component = sources_signals[i,:]
-            f, Pxx = gh.spectre(component, srate, 0.5)
             
             
 
