@@ -2,7 +2,7 @@
 
 from configuration import data_path
 
-subject_keys = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12']
+subject_keys = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12','P13','P14','P15','P16','P17','P18','P21']
 session_keys = ['baseline','music','odor']
 
 run_keys = [f'{sub_key}_{ses_key}' for sub_key in subject_keys for ses_key in session_keys]
@@ -36,15 +36,15 @@ participants_label = {
     'P10':'AA10', # OK
     'P11':'MB11', # OK
     'P12':'AP12', # OK
-    'P13':'RA13',
-    'P14':'DI14',
-    'P15':'RS15',
-    'P16':'KC16',
-    'P17':'LC17',
-    'P18':'GM18',
+    'P13':'ZC13', # OK
+    'P14':'FC14', # OK
+    'P15':'AP15', # OK
+    'P16':'EP16', # OK
+    'P17':'AG17', # OK
+    'P18':'MP18', # OK
     'P19':'SA19',
     'P20':'DM20',
-    'P21':'FF21',
+    'P21':'GA21', # OK
     'P22':'NR22',
     'P23':'MT23',
     'P24':'GC24',
@@ -90,15 +90,15 @@ ecg_inversion = {
 'P10':-1, # OK
 'P11':1, # OK
 'P12':-1, # OK
-'P13':-1,
-'P14':-1,
-'P15':-1,
-'P16':-1,
-'P17':-1,
-'P18':-1,
+'P13':-1, # OK
+'P14':-1, # OK
+'P15':1, # OK
+'P16':-1, # OK
+'P17':1, # OK
+'P18':-1, # OK
 'P19':-1,
 'P20':-1, 
-'P21':-1,
+'P21':-1, # OK
 'P22':-1,
 'P23':-1,
 'P24':-1,
@@ -129,18 +129,18 @@ ica_excluded_component = {
 'P08':{'baseline':[1,3],'music':[0,2],'odor':[0,2]}, # OK
 'P09':{'baseline':[1,2],'music':[1,3],'odor':[1,2]}, # OK
 'P10':{'baseline':[0,1],'music':[0,1],'odor':[0,1]}, # OK
-'P11':{'baseline':[0,1],'music':[0,1],'odor':[3]}, #
+'P11':{'baseline':[0,4],'music':[0,4],'odor':[0,6]}, # OK
 'P12':{'baseline':[0,1],'music':[0,1],'odor':[0,1]}, # OK 
-'P13':{'baseline':[0,9],'music':[0],'odor':[3]}, # 
-'P14':{'baseline':[0,2],'music':[0,1,2,3],'odor':[0,1]}, #
-'P15':{'baseline':[0,1],'music':[0,1],'odor':[1,2]}, # 
-'P16':{'baseline':[0],'music':[0],'odor':[0,3]}, #
-'P17':{'baseline':[3,6],'music':[0,4,6],'odor':[0,1,5]}, #
-'P18':{'baseline':[0,2],'music':[0,2],'odor':[0,2]}, #
+'P13':{'baseline':[0,2],'music':[0,1],'odor':[0,1]}, # OK
+'P14':{'baseline':[0,5],'music':[0,5],'odor':[0,2]}, # OK
+'P15':{'baseline':[0,4],'music':[0,1,4],'odor':[0,2]}, # OK
+'P16':{'baseline':[0,2],'music':[0,1],'odor':[0,1]}, # OK
+'P17':{'baseline':[3,4],'music':[3,4],'odor':[1,2]}, # OK
+'P18':{'baseline':[0,1,2],'music':[0,2],'odor':[0,2]}, # OK
 'P19':{'baseline':[0,1],'music':[4,6],'odor':[0,1]}, # 
 'P20':{'baseline':[0,2],'music':[0,2],'odor':[0,2]}, #
-'P21':{'baseline':[0,2],'music':[0,2],'odor':[0,2]}, # 
-'P22':{'baseline':[0],'music':[0],'odor':[0]}, # not recorded
+'P21':{'baseline':[0,1],'music':[0,2],'odor':[0,1]}, # OK
+'P22':{'baseline':[0],'music':[0],'odor':[0]}, # 
 'P23':{'baseline':[0],'music':[0],'odor':[0,5]}, # 
 'P24':{'baseline':[1,7],'music':[2,7],'odor':[0,8]}, # 
 'P25':{'baseline':[0,2],'music':[0,2],'odor':[0,3]}, # 
