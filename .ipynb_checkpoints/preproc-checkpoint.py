@@ -100,9 +100,9 @@ def compute_ica_figure(run_key, **p):
 
 def test_compute_ica_figure():
 
-    # run_key = 'P02_odor'
+    sub = 'P20' 
     
-    for run_key in ['P12_baseline','P12_music','P12_odor']:
+    for run_key in [f'{sub}_baseline',f'{sub}_music',f'{sub}_odor']:
         compute_ica_figure(run_key, **ica_figure_params)
 
 

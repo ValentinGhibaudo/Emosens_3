@@ -100,9 +100,9 @@ def compute_ica_figure(run_key, **p):
 
 def test_compute_ica_figure():
 
-    # run_key = 'P02_odor'
+    sub = 'P20' 
     
-    for run_key in ['P16_baseline','P16_music','P16_odor']:
+    for run_key in [f'{sub}_baseline',f'{sub}_music',f'{sub}_odor']:
         compute_ica_figure(run_key, **ica_figure_params)
 
 
@@ -149,13 +149,31 @@ def test_compute_preproc():
 
 
 
+def preproc_viewer(run_key, **p):
+    import ghibtools as gh
+    eeg = preproc_job.get(run_key)['eeg_clean']
+    srate = eeg.attrs['srate']
+
+    eeg_viewer = eeg.copy()
+    eeg_viewer[:] = gh.iirfilt(eeg.values, srate, p['lf'], p['hf'] , axis = 1)
+    ds = xr.Dataset()
+    ds['eeg_viewer'] = eeg_viewer
+    return ds
+
+def test_preproc_viewer():
+    run_key = 'P02_baseline'
+    ds = preproc_viewer(run_key, **eeg_viewer_params)
+    print(ds)
+
+
 def compute_all():
     # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(ica_figure_job, run_keys, force_recompute=False, engine='loop')
         
-    jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs=3)
+    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs=3)
 
     # jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(eeg_viewer_job, run_keys, force_recompute=False, engine='loop')
 
 
 convert_vhdr_job = jobtools.Job(precomputedir, 'convert_vhdr',convert_vhdr_params, convert_vhdr)
@@ -167,6 +185,8 @@ jobtools.register_job(ica_figure_job)
 preproc_job = jobtools.Job(precomputedir, 'preproc',preproc_params, compute_preproc)
 jobtools.register_job(preproc_job)
 
+eeg_viewer_job = jobtools.Job(precomputedir, 'viewer', eeg_viewer_params, preproc_viewer)
+jobtools.register_job(eeg_viewer_job)
 
 
 
@@ -174,4 +194,5 @@ if __name__ == '__main__':
     # test_convert_vhdr()
     # test_compute_ica_figure()
     # test_compute_preproc()
+    # test_preproc_viewer()
     compute_all()

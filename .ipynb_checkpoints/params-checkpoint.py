@@ -2,7 +2,7 @@
 
 from configuration import data_path
 
-subject_keys = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12','P13','P14','P15','P16','P17','P18','P21']
+subject_keys = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10','P11','P12','P13','P14','P15','P16','P17','P18','P19','P20','P21']
 session_keys = ['baseline','music','odor']
 
 run_keys = [f'{sub_key}_{ses_key}' for sub_key in subject_keys for ses_key in session_keys]
@@ -42,8 +42,8 @@ participants_label = {
     'P16':'EP16', # OK
     'P17':'AG17', # OK
     'P18':'MP18', # OK
-    'P19':'SA19',
-    'P20':'DM20',
+    'P19':'SR19', # OK
+    'P20':'MV20', # OK
     'P21':'GA21', # OK
     'P22':'NR22',
     'P23':'MT23',
@@ -96,8 +96,8 @@ ecg_inversion = {
 'P16':-1, # OK
 'P17':1, # OK
 'P18':-1, # OK
-'P19':-1,
-'P20':-1, 
+'P19':-1, # OK
+'P20':-1, # OK 
 'P21':-1, # OK
 'P22':-1,
 'P23':-1,
@@ -137,8 +137,8 @@ ica_excluded_component = {
 'P16':{'baseline':[0,2],'music':[0,1],'odor':[0,1]}, # OK
 'P17':{'baseline':[3,4],'music':[3,4],'odor':[1,2]}, # OK
 'P18':{'baseline':[0,1,2],'music':[0,2],'odor':[0,2]}, # OK
-'P19':{'baseline':[0,1],'music':[4,6],'odor':[0,1]}, # 
-'P20':{'baseline':[0,2],'music':[0,2],'odor':[0,2]}, #
+'P19':{'baseline':[0,2],'music':[0,2],'odor':[0,2]}, # OK
+'P20':{'baseline':[0,3],'music':[0,2],'odor':[0,4]}, # OK
 'P21':{'baseline':[0,1],'music':[0,2],'odor':[0,1]}, # OK
 'P22':{'baseline':[0],'music':[0],'odor':[0]}, # 
 'P23':{'baseline':[0],'music':[0],'odor':[0,5]}, # 

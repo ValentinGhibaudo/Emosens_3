@@ -15,7 +15,7 @@ from ephyviewer import MainViewer, TraceViewer, TimeFreqViewer, EpochViewer, Eve
 #~ from myqt import QT, DebugDecorator
 
 from params import eeg_chans, session_duration
-from preproc import convert_vhdr_job, preproc_job
+from preproc import convert_vhdr_job, preproc_job, eeg_viewer_job
 from compute_resp_features import respiration_features_job
 from compute_rri import ecg_job, rri_signal_job
 
@@ -121,10 +121,10 @@ def get_viewer_from_run_key(run_key, parent=None):
     ###### viewer4
     #~ channel_names = eeg_chans
     
-    ds_eeg = preproc_job.get(run_key)
-    eeg_clean = ds_eeg['eeg_clean'].values.T
-    srate = ds_eeg['eeg_clean'].attrs['srate']
-    channel_names = ds_eeg['eeg_clean'].coords['chan'].values
+    ds_eeg = eeg_viewer_job.get(run_key)
+    eeg_clean = ds_eeg['eeg_viewer'].values.T
+    srate = ds_eeg['eeg_viewer'].attrs['srate']
+    channel_names = ds_eeg['eeg_viewer'].coords['chan'].values
     
     source = InMemoryAnalogSignalSource(eeg_clean, srate, 0, channel_names=channel_names)
 
@@ -152,7 +152,7 @@ def get_viewer_from_run_key(run_key, parent=None):
     
 
 
-    win.set_xsize(30.)
+    win.set_xsize(60.)
 
     win.auto_scale()
     
@@ -165,7 +165,7 @@ def get_viewer_from_run_key(run_key, parent=None):
 
 def test_get_viewer():
     
-    run_key = 'P04_odor'
+    run_key = 'P10_odor'
 
     # ds = respiration_features_job.get(run_key)
     # print(ds)
