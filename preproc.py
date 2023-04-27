@@ -76,6 +76,8 @@ def apply_ica(raw_eeg, exclude, participant, session, n_components, save_figures
         plt.savefig(base_folder / 'Figures' / 'ICA' / f'{participant}_{session}_Topo')
         plt.close()
         
+        plt.close('all')
+        
             
             
 
@@ -100,7 +102,7 @@ def compute_ica_figure(run_key, **p):
 
 def test_compute_ica_figure():
 
-    sub = 'P20' 
+    sub = 'P22' 
     
     for run_key in [f'{sub}_baseline',f'{sub}_music',f'{sub}_odor']:
         compute_ica_figure(run_key, **ica_figure_params)
@@ -167,13 +169,13 @@ def test_preproc_viewer():
 
 
 def compute_all():
-    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(ica_figure_job, run_keys, force_recompute=False, engine='loop')
         
     # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs=3)
 
     # jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(eeg_viewer_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(eeg_viewer_job, run_keys, force_recompute=False, engine='loop')
 
 
 convert_vhdr_job = jobtools.Job(precomputedir, 'convert_vhdr',convert_vhdr_params, convert_vhdr)

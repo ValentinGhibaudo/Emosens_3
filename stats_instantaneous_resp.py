@@ -5,6 +5,9 @@ from configuration import *
 from params import *
 from bibliotheque import *
 import matplotlib.pyplot as plt
+import ghibtools as gh
+
+n_resp_cycles_window = 5
 
 metrics = ['cycle_duration','inspi_duration','expi_duration',
            'total_amplitude','inspi_amplitude','expi_amplitude',
@@ -31,7 +34,7 @@ for sub in subject_keys:
             
                 ax =axs[r,c]
                 metric = metrics_array[r,c]
-                ax.plot(resp[metric], label = ses)
+                ax.plot(gh.sliding_mean(resp[metric], nwin = n_resp_cycles_window), label = ses)
                 ax.set_xlabel('N resp cycle')
                 ax.set_title(metric)
                 ax.legend()
