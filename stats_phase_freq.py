@@ -23,8 +23,8 @@ def get_N_resp_cycles(run_keys):
         concat.append(resp)
 
     all_resp = pd.concat(concat)
-    
-    N_cycles = all_resp.value_counts(subset = ['participant','session']).to_frame().reset_index().rename(columns ={0:'N'}).set_index(['participant','session'])
+
+    N_cycles = all_resp.value_counts(subset = ['participant','session']).to_frame().reset_index().rename(columns ={'count':'N'}).set_index(['participant','session'])
     return N_cycles
 
 N_cycles = get_N_resp_cycles(run_keys)

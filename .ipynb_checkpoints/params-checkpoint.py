@@ -6,8 +6,8 @@ subject_keys = ['P01','P02','P03','P04','P05',
                 'P06','P07','P08','P09','P10',
                 'P11','P12','P13','P14','P15',
                 'P16','P17','P18','P19','P20',
-                'P21','P22','P23','P24','P25',
-                'P26','P27','P28','P29','P30','P31']
+                'P21','P23','P24','P25', # P22 not in list because artifacted
+                'P26','P27','P28','P29','P30','P31'] 
 
 session_keys = ['baseline','music','odor']
 
@@ -270,12 +270,14 @@ time_freq_params = {
 }
 
 phase_freq_params = {
+    'respiration_features_params':respiration_features_params,
     'time_freq_params':time_freq_params,
     'n_phase_bins':200,
     'segment_ratios':0.4,
 }
 
 phase_freq_fig_params = {
+    'phase_freq_params':phase_freq_params,
     'baseline_mode':'rz_score',
     'compress_cycle_mode':'med_cycle',
     'stim_sessions':['music','odor'],
