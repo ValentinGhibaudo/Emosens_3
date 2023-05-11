@@ -9,9 +9,13 @@ if getpass.getuser() == 'samuel' and  sys.platform.startswith('linux'):
 elif getpass.getuser() in ('samuel.garcia', 'valentin.ghibaudo') and  sys.platform.startswith('linux'):
     base_cmo = '/crnldata/cmo/'
 
+elif getpass.getuser() == 'matthias' and  sys.platform.startswith('linux'):
+    base_cmo = '/home/matthias/smb4k/CRNLDATA/crnldata/cmo/'
+
+
 elif getpass.getuser() == 'valentin' and  sys.platform.startswith('linux'):
     base_cmo = '/home/valentin/smb4k/CRNLDATA/crnldata/cmo/'
-    
+
 elif sys.platform.startswith('win'):
     base_cmo = 'N:/cmo/'
 

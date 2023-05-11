@@ -141,7 +141,7 @@ def get_viewer_from_run_key(run_key, parent=None):
     view5 = TimeFreqViewer(source=source, name='tfr')
     win.add_view(view5)
     view5.params['show_axis'] = True
-    view5.params['timefreq', 'deltafreq'] = 1
+    view5.params['timefreq', 'deltafreq'] = 1.
     view5.params['timefreq', 'f0'] = 3.
     view5.params['timefreq', 'f_start'] = 1.
     view5.params['timefreq', 'f_stop'] = 100.
@@ -165,7 +165,7 @@ def get_viewer_from_run_key(run_key, parent=None):
 
 def test_get_viewer():
     
-    run_key = 'P04_odor'
+    run_key = 'P07_music'
 
     # ds = respiration_features_job.get(run_key)
     # print(ds)
