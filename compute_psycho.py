@@ -142,16 +142,58 @@ jobtools.register_job(relaxation_job)
 
 
 ###
+# RELAXATION
+def process_emotions(sub_key, **p):
+    participant = sub_key
+    session_keys = ['odor','music']
+    
+    keep_cols = ['intensité_brute','hédonicité_brute','Evocation_souvenirs_brute','Caractère_irritant_brute','Valence_émotionnelle_brute','Intensité_émotionnelle_brute']
+
+    stim_path = data_path / participant / 'questionnaires' / 'ses02' / f'cotation_stim_{participant}.xlsx'
+    
+    stim_df = pd.read_excel(stim_path, index_col = 0)
+    
+    concat = []
+    for ses in session_keys:
+        sel = stim_df.set_index('Stimulation').loc[ses,keep_cols].to_frame().T
+        sel.insert(0 , 'stim_name', stim_df.set_index('Stimulation').loc[ses,'name'])
+        sel.insert(0 , 'session', ses)
+        sel.insert(0, 'participant', participant)
+        concat.append(sel)
+        
+    rename_col = {'intensité_brute':'Intensity',
+                  'hédonicité_brute':'Hedonicity',
+                  'Evocation_souvenirs_brute':'Memories',
+                  'Caractère_irritant_brute':'Irritability',
+                 'Valence_émotionnelle_brute':'Emotional_Valence',
+                 'Intensité_émotionnelle_brute':'Emotional_Intensity'}
+    
+    df_return = pd.concat(concat).reset_index(drop = True).rename(columns = rename_col)
+    
+    return xr.Dataset(df_return)
+
+def test_process_emotions():
+    sub_key = 'P01'
+    ds = process_emotions(sub_key, **emotions_params)
+    print(ds.to_dataframe())
+    
+emotions_job = jobtools.Job(precomputedir, 'emotions', emotions_params, process_emotions)
+jobtools.register_job(emotions_job)
+
+
+###
 
 def compute_all():
     # jobtools.compute_job_list(maia_job, subject_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(stai_longform_job, run_keys_stai, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(relaxation_job, subject_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(relaxation_job, subject_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(emotions_job, subject_keys, force_recompute=False, engine='loop')
 
 
 
 if __name__ == '__main__':
     # test_process_maia()
     # test_process_stai_longform()
-    test_process_relaxation()
+    # test_process_relaxation()
+    test_process_emotions()
     # compute_all()

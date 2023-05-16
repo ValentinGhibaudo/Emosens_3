@@ -275,3 +275,28 @@ def get_raw_mne(run_key, participants_label, preload=False):
     raw = mne.io.read_raw_brainvision(file, preload = preload, verbose = 'CRITICAL')
     return raw
 
+def get_pval(df, predictor, outcome, subject=None, design='within', verbose = False):
+    import ghibtools as gh
+    parametricity = gh.parametric(df, predictor, outcome, subject)
+    tests = gh.guidelines(df, predictor, design, parametricity)
+    pre_test = tests['pre']
+    post_test = tests['post']
+    if verbose:
+        print(f'Pre : {pre_test}')
+        print(f'Post : {post_test}')
+    results = gh.pg_compute_pre(df, predictor, outcome, pre_test, subject)
+    return results['p']
+
+def get_df_mask_chan_signif(df, chans, predictor, outcome, subject, design = 'within'):
+    import pingouin as pg
+    rows = []
+    for chan in chans:
+        p = get_pval(df = df[df['chan'] == chan], predictor = 'session', outcome = outcome, subject = subject,verbose = False, design= design)
+        signif = True if p > 0.05 else False
+        rows.append([chan, p, signif])
+    chan_signif = pd.DataFrame(rows, columns = ['chan','p','mask'])
+    mask_corr, p_corr = pg.multicomp(chan_signif['p'])
+    chan_signif['p_corr'] = p_corr
+    chan_signif['mask_corr'] = mask_corr
+    chan_signif = chan_signif.set_index('chan').reindex(eeg_chans)
+    return chan_signif

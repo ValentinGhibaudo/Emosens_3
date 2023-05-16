@@ -326,3 +326,5 @@ maia_params = {
     }
 
 relaxation_params = {}
+
+emotions_params = {}
