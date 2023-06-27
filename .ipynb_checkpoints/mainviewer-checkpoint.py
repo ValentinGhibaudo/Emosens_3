@@ -9,11 +9,6 @@ import numpy as np
 import ephyviewer as ev
 from ephyviewer import MainViewer, TraceViewer, TimeFreqViewer, EpochViewer, EventList, VideoViewer, DataFrameView, InMemoryAnalogSignalSource
 
-#~ from params import subject_keys, srate, eeg_chans, trial_durations
-#~ from configuration import base_folder
-
-#~ from myqt import QT, DebugDecorator
-
 from params import eeg_chans, session_duration
 from preproc import convert_vhdr_job, preproc_job, eeg_viewer_job
 from compute_resp_features import respiration_features_job
@@ -26,20 +21,12 @@ def get_viewer_from_run_key(run_key, parent=None):
     print('get_viewer_from_run_key', run_key)
     
     
-    #~ session = get_session_from_odor(run_key, odeur)
-    
-    #~ raw_data = xr.open_dataarray(base_folder / 'Preprocessing' / 'Data_Preprocessed' / f'raw_{run_key}_{session}.nc')
-    #~ clean_data = xr.open_dataarray(base_folder / 'Preprocessing' / 'Data_Preprocessed' / f'clean_{run_key}_{session}.nc')
-    #~ resp_features = pd.read_excel(base_folder / 'Tables' / 'resp_features' / f'{run_key}_{session}_resp_features.xlsx')
-    
     resp_features = respiration_features_job.get(run_key).to_dataframe()
     
     raw_dataset = convert_vhdr_job.get(run_key)
     
     raw_data = raw_dataset['raw'].sel(time = slice(0, session_duration))[:,:-1]
     srate = raw_dataset['raw'].attrs['srate']
-    # print(raw_data)
-
 
     win = MainViewer(show_label_datetime=False, parent=parent, show_global_xsize=True, show_auto_scale=True)
 
@@ -69,8 +56,6 @@ def get_viewer_from_run_key(run_key, parent=None):
     
     
     # ecg
-    #~ sig_ecg = raw_data.sel(chan='ECG').values[:, None]
-    
     ecg_ds = ecg_job.get(run_key)
     sig_ecg = ecg_ds['ecg'].values[:, None]
     
@@ -91,8 +76,9 @@ def get_viewer_from_run_key(run_key, parent=None):
     #~ channel_names = ['RRI']
     
     ds_rri = rri_signal_job.get(run_key)
-    rri_sig = ds_rri['rri'].values[:, None]
-    srate = ds_rri['rri'].attrs['srate']
+    da_rri = ds_rri['rri']
+    srate = da_rri.attrs['srate']
+    rri_sig = da_rri.values[:, None]
 
     view_rri = TraceViewer.from_numpy(rri_sig,  srate, t_start, 'RRI', channel_names=['RRI'])
     win.add_view(view_rri)
@@ -121,10 +107,10 @@ def get_viewer_from_run_key(run_key, parent=None):
     ###### viewer4
     #~ channel_names = eeg_chans
     
-    ds_eeg = eeg_viewer_job.get(run_key)
-    eeg_clean = ds_eeg['eeg_viewer'].values.T
-    srate = ds_eeg['eeg_viewer'].attrs['srate']
-    channel_names = ds_eeg['eeg_viewer'].coords['chan'].values
+    eeg_clean = preproc_job.get(run_key)['eeg_clean']
+    srate = eeg_clean.attrs['srate']
+    eeg_clean = eeg_clean.values.T
+    channel_names = eeg_clean.coords['chan'].values
     
     source = InMemoryAnalogSignalSource(eeg_clean, srate, 0, channel_names=channel_names)
 
@@ -141,7 +127,7 @@ def get_viewer_from_run_key(run_key, parent=None):
     view5 = TimeFreqViewer(source=source, name='tfr')
     win.add_view(view5)
     view5.params['show_axis'] = True
-    view5.params['timefreq', 'deltafreq'] = 1
+    view5.params['timefreq', 'deltafreq'] = 1.
     view5.params['timefreq', 'f0'] = 3.
     view5.params['timefreq', 'f_start'] = 1.
     view5.params['timefreq', 'f_stop'] = 100.
@@ -165,7 +151,7 @@ def get_viewer_from_run_key(run_key, parent=None):
 
 def test_get_viewer():
     
-    run_key = 'P10_music'
+    run_key = 'P07_music'
 
     # ds = respiration_features_job.get(run_key)
     # print(ds)

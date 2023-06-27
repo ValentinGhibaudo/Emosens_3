@@ -6,6 +6,9 @@ import pandas as pd
 import jobtools
 from bibliotheque import get_raw_mne
 import matplotlib.pyplot as plt
+from scipy import signal
+from bibliotheque_artifact_detection import detect_artifacts, sliding_rms, compute_artifact_features, detect_cross, insert_noise
+
 
 def convert_vhdr(run_key, **p):
     raw = get_raw_mne(run_key, participants_label, preload=True)
@@ -113,8 +116,8 @@ def test_compute_ica_figure():
 
 def compute_preproc(run_key, **p):
     import mne
-    #~ print(run_key)
-    #~ print(p['notch_freqs'])
+    import ghibtools as gh
+
 
     participant, session = run_key.split('_')
 
@@ -134,6 +137,9 @@ def compute_preproc(run_key, **p):
     
     data = raw_clean_from_eog.get_data()
     
+    data_detrended = signal.detrend(data, axis = 1)
+    data_filtered = gh.iirfilt(data, srate, lowcut = p['lowcut'], highcut= p['highcut'], order = p['order'] , axis = 1)
+    
     times = np.arange(data.shape[1]) / srate
 
     # CONCAT DATA
@@ -148,34 +154,130 @@ def test_compute_preproc():
     run_key = 'P02_baseline'
     ds = compute_preproc(run_key, **preproc_params)
     print(ds)
+    
+    
+def detect_movement_artifacts(run_key, **p):
+    import ghibtools as gh
+    
+    da = preproc_job.get(run_key)['eeg_clean']
+    srate = da.attrs['srate']
+    
+    eeg_filt = gh.iirfilt(da.values, srate, p['lf'], p['hf'], ftype = 'bessel', order = 2, axis = 1)
+    masks = eeg_filt.copy()
+    
+    for i in range(eeg_filt.shape[0]):
+        sig_chan_filtered = eeg_filt[i,:]
+        t, rms_chan = sliding_rms(sig_chan_filtered, sf=srate, window = p['window_size'], step = p['step']) 
+        pos, dev = gh.med_mad(rms_chan)
+        detect_threshold = pos + p['n_deviations'] * dev
+        masks[i,:] = rms_chan > detect_threshold
+    
+    compress_chans = masks.sum(axis = 0)
+    inds = detect_cross(compress_chans, p['n_chan_artifacted']+0.5)
+    artifacts = compute_artifact_features(inds, srate)
+    
+    return xr.Dataset(artifacts)
+
+def test_detect_movement_artifacts():
+    run_key = 'P02_baseline'
+    df = detect_movement_artifacts(run_key, **artifact_params).to_dataframe()
+    print(df)
+    
+    
+    
+    
+
+def detect_movement_artifacts_by_channel(run_key, **p):
+    import ghibtools as gh
+    
+    da = preproc_job.get(run_key)['eeg_clean']
+    srate = da.attrs['srate']
+    
+    eeg_filt = gh.iirfilt(da.values, srate, p['lf'], p['hf'], ftype = 'bessel', order = 2, axis = 1)
+    
+    artifacts = []
+    for i in range(eeg_filt.shape[0]):
+        chan = da.coords['chan'].values[i]
+        sig_chan_filtered = eeg_filt[i,:]
+        t, rms_chan = sliding_rms(sig_chan_filtered, sf=srate, window = p['window_size'], step = p['step']) 
+        pos, dev = gh.med_mad(rms_chan)
+        detect_threshold = pos + p['n_deviations'] * dev
+        cross = detect_cross((rms_chan > detect_threshold).astype(int), 0.5)
+        if not cross is None:
+            cross['chan'] = chan
+            artifacts.append(cross)
+    
+    artifacts = pd.concat(artifacts, axis=0)
+    artifacts['start_t'] = artifacts['rises'] / srate
+    artifacts['stop_t'] = artifacts['decays'] / srate
+    artifacts = artifacts.rename(columns = {'rises':'start_ind','decays':'stop_ind'})
+    return xr.Dataset(artifacts)
 
 
-
-def preproc_viewer(run_key, **p):
+def test_detect_movement_artifacts_by_channel():
+    run_key = 'P02_baseline'
+    df = detect_movement_artifacts_by_channel(run_key, **artifact_by_chan_params).to_dataframe()
+    print(df)
+    
+    
+def interp_artifact(run_key, **p):
     import ghibtools as gh
     eeg = preproc_job.get(run_key)['eeg_clean']
     srate = eeg.attrs['srate']
-
-    eeg_viewer = eeg.copy()
-    eeg_viewer[:] = gh.iirfilt(eeg.values, srate, p['lf'], p['hf'] , axis = 1)
+    
+    artifacts = artifact_by_chan_job.get(run_key).to_dataframe()
+    
+    eeg_patched = eeg.copy()
+    
+    for chan in eeg.coords['chan'].values:
+        chan_artifacts = artifacts[artifacts['chan'] == chan]
+        if chan_artifacts.shape[0] != 0:
+            eeg_patched.loc[chan,:] = insert_noise(eeg.loc[chan,:].values, srate, chan_artifacts, p['freq_min'], p['margin_s'] , p['seed'])
+        else:
+            eeg_patched.loc[chan,:] = eeg.loc[chan,:].values
+    
+    eeg_patched.attrs['srate'] = srate
     ds = xr.Dataset()
-    ds['eeg_viewer'] = eeg_viewer
+    
+    ds['interp'] = eeg_patched
     return ds
 
-def test_preproc_viewer():
+def test_interp_artifact():
     run_key = 'P02_baseline'
-    ds = preproc_viewer(run_key, **eeg_viewer_params)
-    print(ds)
-
-
-def compute_all():
-    jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(ica_figure_job, run_keys, force_recompute=False, engine='loop')
+    ds = interp_artifact(run_key, **interp_artifact_params)
+    print(ds['interp'])
+    
+    
+def count_artifact(sub_key, **p):
+    rows = []
+    for ses in session_keys:
+        run_key = f'{sub_key}_{ses}'
+        artifacts = artifact_job.get(run_key).to_dataframe()
+        n_secs_artifacted = artifacts['duration'].sum()
+        prop_secs_artifacted = n_secs_artifacted / p['session_duration']
+        row = [sub_key, ses , n_secs_artifacted,prop_secs_artifacted]
+        rows.append(row)
         
-    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs=3)
+    
+    columns = ['participant','session', 'n_secs_artifacted','prop_secs_artifacted']
+    df = pd.DataFrame(rows, columns=columns)
+    df['remove'] = df['prop_secs_artifacted'].apply(lambda x : 1 if x > p['thresh_prop_time_artifacted'] else 0)
+    return xr.Dataset(df)
 
+def test_count_artifact():
+    sub_key = 'P02'
+    df = count_artifact(sub_key, **count_artifact_params).to_dataframe()
+    print(df)
+    
+    
+def compute_all():
+    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(ica_figure_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    # jobtools.compute_job_list(artifact_by_chan_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(eeg_viewer_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(eeg_interp_artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    # jobtools.compute_job_list(count_artifact_job, subject_keys, force_recompute=False, engine='joblib', n_jobs = 6)
 
 
 convert_vhdr_job = jobtools.Job(precomputedir, 'convert_vhdr',convert_vhdr_params, convert_vhdr)
@@ -187,8 +289,17 @@ jobtools.register_job(ica_figure_job)
 preproc_job = jobtools.Job(precomputedir, 'preproc',preproc_params, compute_preproc)
 jobtools.register_job(preproc_job)
 
-eeg_viewer_job = jobtools.Job(precomputedir, 'viewer', eeg_viewer_params, preproc_viewer)
-jobtools.register_job(eeg_viewer_job)
+artifact_job = jobtools.Job(precomputedir, 'movements_artifacts', artifact_params, detect_movement_artifacts)
+jobtools.register_job(artifact_job)
+
+artifact_by_chan_job = jobtools.Job(precomputedir, 'movements_artifacts_by_chan', artifact_by_chan_params, detect_movement_artifacts_by_channel)
+jobtools.register_job(artifact_by_chan_job)
+
+eeg_interp_artifact_job = jobtools.Job(precomputedir, 'eeg_interp', interp_artifact_params, interp_artifact)
+jobtools.register_job(eeg_interp_artifact_job)
+
+count_artifact_job = jobtools.Job(precomputedir, 'count_artifacts', count_artifact_params, count_artifact)
+jobtools.register_job(count_artifact_job)
 
 
 
@@ -196,5 +307,9 @@ if __name__ == '__main__':
     # test_convert_vhdr()
     # test_compute_ica_figure()
     # test_compute_preproc()
-    # test_preproc_viewer()
+    # test_detect_movement_artifacts()
+    # test_detect_movement_artifacts_by_channel()
+    # test_interp_artifact()
+    # test_count_artifact()
+    
     compute_all()

@@ -5,16 +5,18 @@ import pandas as pd
 import jobtools
 import ghibtools as gh
 from bibliotheque import init_nan_da
-from preproc import preproc_job, convert_vhdr_job
+from preproc import eeg_interp_artifact_job, convert_vhdr_job
+import physio
 
 
 def compute_coherence(run_key, **p):
 
-    eeg = preproc_job.get(run_key)['eeg_clean']
+    eeg = eeg_interp_artifact_job.get(run_key)['interp']
     srate = eeg.attrs['srate']
     
-    resp_sig = convert_vhdr_job.get(run_key)['raw'].sel(chan = p['resp_chan'], time = slice(0, p['session_duration'])).values[:-1]
-                                                        
+    resp_raw = convert_vhdr_job.get(run_key)['raw'].sel(chan = p['resp_chan'], time = slice(0, p['session_duration'])).values[:-1]
+    resp_sig, resp_cycles = physio.compute_respiration(resp_raw, srate, parameter_preset='human_airflow')
+    
     da_cxy = None
     
     for chan in eeg.coords['chan'].values:
@@ -42,6 +44,7 @@ def coherence_at_resp(run_key, **p):
     coherence = coherence['coherence']
     
     resp_sig = convert_vhdr_job.get(run_key)['raw'].sel(chan = coherence_params['resp_chan'], time = slice(0, coherence_params['session_duration'])).values[:-1]
+    resp_sig, resp_cycles = physio.compute_respiration(resp_sig, srate, parameter_preset='human_airflow')
     
     rows = []
 

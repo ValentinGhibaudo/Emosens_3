@@ -2,10 +2,12 @@ from configuration import *
 from params import *
 import xarray as xr
 import jobtools
-from preproc import convert_vhdr_job
+from preproc import convert_vhdr_job, artifact_job
 
 def compute_respiration_features(run_key, **p):
     import physio 
+    
+    sub, ses = run_key.split('_')
     
     raw_dataset = convert_vhdr_job.get(run_key)
     
@@ -15,37 +17,34 @@ def compute_respiration_features(run_key, **p):
     if p['inspiration_sign'] == '+':
         resp_raw = -resp_raw
 
-    # preprocessing
-    resp = physio.preprocess(resp_raw, srate, band=p['low_pass_freq'], btype='lowpass', ftype='bessel',
-                                order=p['filter_order'], normalize=False)
-    resp = physio.smooth_signal(resp, srate, win_shape='gaussian', sigma_ms=p['smooth_sigma_ms'])
-
-    baseline = physio.get_empirical_mode(resp)
-    espilon = (np.quantile(resp, 0.75) - np.quantile(resp, 0.25)) / 100.
-    baseline_detect = baseline - espilon * 5.
-
-    cycles = physio.detect_respiration_cycles(resp, srate, baseline_mode='manual', baseline=baseline_detect,
-                                              inspiration_adjust_on_derivative=False)
-    cycle_features = physio.compute_respiration_cycle_features(resp, srate, cycles, baseline=baseline)
-
-    cycle_features_clean = physio.clean_respiration_cycles(resp, srate, cycle_features, baseline,
-                                                           low_limit_log_ratio=3)
-
+    resp, resp_cycles = physio.compute_respiration(resp_raw, srate, parameter_preset='human_airflow')
+    resp_cycles['participant'] = sub
+    resp_cycles['session'] = ses
     
-    ds = xr.Dataset(cycle_features_clean)
+    artifacts = artifact_job.get(run_key).to_dataframe()
+    
+    resp_artifacted = resp_cycles.copy()
+    resp_artifacted['artifact'] = 0
+    
+    for i, cycle_respi in resp_artifacted.iterrows():
+        window_cycle_respi = np.arange(cycle_respi['inspi_index'], cycle_respi['next_inspi_index'])
+        
+        for j, artifact in artifacts.iterrows():
+            window_artifact = np.arange(artifact['start_ind'], artifact['stop_ind'])
+            
+            if sum(np.in1d(window_cycle_respi, window_artifact)) != 0:
+                resp_artifacted.loc[i, 'artifact'] = 1
+    
+    ds = xr.Dataset(resp_artifacted)
     
     return ds
     
 
-
-
 def test_compute_respiration_features():
     run_key = 'P02_baseline'
     ds = compute_respiration_features(run_key, **respiration_features_params)
-    print(ds)
-    
-
-    
+    print(ds.to_dataframe())
+     
     
 def compute_all():
     jobtools.compute_job_list(respiration_features_job, run_keys, force_recompute=False, engine='loop')
@@ -53,7 +52,6 @@ def compute_all():
     
 respiration_features_job = jobtools.Job(precomputedir, 'respiration_features', respiration_features_params, compute_respiration_features)
 jobtools.register_job(respiration_features_job)
-
 
 
 if __name__ == '__main__':

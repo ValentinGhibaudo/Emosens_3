@@ -6,6 +6,7 @@ import jobtools
 import ghibtools as gh
 from compute_psd import psd_eeg_job
 from preproc import convert_vhdr_job
+import physio
 
 def compute_power_at_resp(run_key, **p):
     participant, session = run_key.split('_')
@@ -14,6 +15,7 @@ def compute_power_at_resp(run_key, **p):
     srate = psd_eeg.attrs['srate']
     
     resp_sig = convert_vhdr_job.get(run_key)['raw'].sel(chan = p['resp_chan'], time = slice(0,p['session_duration'])).values[:-1]
+    resp_sig, resp_cycles = physio.compute_respiration(resp_sig, srate, parameter_preset='human_airflow')
 
     f_resp, Pxx_resp = gh.spectre(resp_sig, srate, p['lowest_freq_psd_resp'])
     Pxx_resp_sel = Pxx_resp[f_resp<1]

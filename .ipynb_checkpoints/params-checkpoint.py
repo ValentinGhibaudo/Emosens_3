@@ -178,7 +178,7 @@ convert_vhdr_params = {
 }
 
 random_state = 27
-notch_freqs = np.arange(50, 500, 50).tolist()
+notch_freqs = np.arange(50, 200, 50).tolist()
 n_components_decomposition = 10
 
 ica_figure_params = {
@@ -195,29 +195,55 @@ preproc_params = {
     'ica_excluded_component': ica_excluded_component,
     'eeg_chans': eeg_chans ,
     'n_components_decomposition' :n_components_decomposition ,
-    'session_duration':session_duration
+    'session_duration':session_duration,
+    'lowcut':0.05, # lowcut frequency in Hz
+    'highcut':200, # highcut frequency in Hz
+    'ftype':'butter',
+    'order':6
+}
+
+artifact_params = {
+    'preproc_params':preproc_params,
+    'n_deviations':3, # number of deviations (MAD) to the median
+    'window_size':1.5, # size in seconds of th moving window of rms
+    'step': 0.5, # step time in second to compute rms windows
+    'lf':30, # low cutoff frequency to filter signal on which artifacts are detected
+    'hf':150, # high cutoff frequency to filter signal on which artifacts are detected
+    'n_chan_artifacted':5 # when this number of channels are bugging at the same time, an artifact is detected
+}
+
+artifact_by_chan_params = {
+    'preproc_params':preproc_params,
+    'n_deviations':4.5, # number of deviations (MAD) to the median
+    'window_size':1.5, # size in seconds of th moving window of rms
+    'step': 0.5, # step time in second to compute rms windows
+    'lf':30, # low cutoff frequency to filter signal on which artifacts are detected
+    'hf':150, # high cutoff frequency to filter signal on which artifacts are detected
+}
+
+interp_artifact_params = {
+    'artifact_params':artifact_params,
+    'freq_min':30.,
+    'margin_s':0.2, 
+    'seed':None
+}
+
+count_artifact_params = {
+    'artifact_params':artifact_params,
+    'session_duration':session_duration,
+    'thresh_prop_time_artifacted':0.3 # trials with more than this proportion of time artifacted will be marked as removable
 }
 
 respiration_features_params = {
     'inspiration_sign' : '+',
-    'low_pass_freq': 5.,
-    'filter_order' : 5,
-    'smooth_sigma_ms': 200.0,
     'session_duration':session_duration
-    
 }
 
 
 ecg_params = {
     'session_duration':session_duration,
     'ecg_inversion' : ecg_inversion,
-    'low': 5.,
-    'high':45.,
-    'ftype':'bessel',
-    'order':5,
-    'threshold' : 7,
-    'exclude_sweep_ms': 4.0,
-    'min_interval_ms': 400.
+    'thresh':5 # N mads to detect ECG peaks
 }
 
 rri_signal_params = {
@@ -229,11 +255,14 @@ rri_signal_params = {
 
 
 psd_params = {
+    'interp_artifact_params':interp_artifact_params,
     'lowest_freq':0.1,
 }
 
 bandpower_params = {
+    'psd_params':psd_params,
     'fbands':fbands,
+    'total_band':[psd_params['lowest_freq'] , 200] # keep clean freq band (> 200 Hz = noisy)
 }
 
 power_at_resp_params = {
@@ -244,6 +273,7 @@ power_at_resp_params = {
 }
 
 coherence_params = {
+    'interp_artifact_params':interp_artifact_params,
     'resp_chan':'RespiNasale',
     'lowest_freq_psd_resp':0.15,
     'lowest_freq_coherence':0.15,
@@ -256,9 +286,8 @@ coherence_at_resp_params = {
     'coherence_params': coherence_params,
 }
 
-
-
 time_freq_params = {
+    'interp_artifact_params':interp_artifact_params,
     'chans':['F3','F4','C3','C4','T7','T8','P7','P8','O1','O2'],
     'decimate_factor':2,
     'n_freqs':150,
@@ -290,16 +319,9 @@ eda_params = {
 
 rsa_params = {
     'respiration_features_params':respiration_features_params,
-    'rri_signal_params':rri_signal_params,
+    'ecg_params':ecg_params,
     'n_phase_bins':100,
-    'segment_ratios':0.4
 }
-
-eeg_viewer_params = {
-    'lf':0.05,
-    'hf':100
-}
-
 
 stai_longform_params = {
     'mean_etat':35.4,

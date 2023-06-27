@@ -82,7 +82,7 @@ def get_pos(eeg_chans=eeg_chans):
 
 
 def get_metadata():
-    return pd.read_excel('/crnldata/cmo/multisite/DATA_MANIP/EEG_Lyon_VJ/Data/raw_data/metadata.xlsx', index_col = 0)
+    return pd.read_excel(base_folder / 'Data' / 'order_stims.xlsx', index_col = 0)
 
 
 def get_anxiety_state_from_session(participant, session):

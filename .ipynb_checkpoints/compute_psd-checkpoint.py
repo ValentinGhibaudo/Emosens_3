@@ -5,11 +5,11 @@ import physio
 import jobtools
 import ghibtools as gh
 from bibliotheque import init_nan_da
-from preproc import preproc_job
+from preproc import eeg_interp_artifact_job
 
 def compute_psd(run_key, **p):
     
-    eeg = preproc_job.get(run_key)['eeg_clean']
+    eeg = eeg_interp_artifact_job.get(run_key)['interp']
     srate = eeg.attrs['srate']
     
     psd = None
@@ -33,6 +33,7 @@ def compute_psd(run_key, **p):
 def test_compute_psd():
     run_key = 'P02_baseline'
     psd_ds = compute_psd(run_key, **psd_params)
+    print(psd_ds)
     
     
 psd_eeg_job = jobtools.Job(precomputedir, 'psd_eeg', psd_params, compute_psd)

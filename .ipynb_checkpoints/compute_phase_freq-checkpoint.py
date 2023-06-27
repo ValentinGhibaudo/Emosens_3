@@ -7,7 +7,7 @@ import numpy as np
 
 import jobtools
 
-from preproc import preproc_job
+from preproc import eeg_interp_artifact_job
 from compute_resp_features import respiration_features_job
 
 from params import *
@@ -31,7 +31,7 @@ def sig_to_tf(sig, p, srate):
 
 def compute_baseline_power(run_key, **p):
     
-    eeg = preproc_job.get(run_key)['eeg_clean']
+    eeg = eeg_interp_artifact_job.get(run_key)['interp']
     srate = eeg.attrs['srate']
     
     baselines = None 
@@ -85,13 +85,14 @@ def compute_phase_frequency(run_key, **p):
     tf_params = p['time_freq_params']
     
     participant, session = run_key.split('_')
-    eeg = preproc_job.get(run_key)['eeg_clean']
+    eeg = eeg_interp_artifact_job.get(run_key)['interp']
     srate = eeg.attrs['srate']
     baselines = baseline_power_job.get(f'{participant}_baseline')['baseline']
     cycle_features = respiration_features_job.get(run_key).to_dataframe()
     cycle_times = cycle_features[['inspi_time','expi_time','next_inspi_time']].values
     
-    srate_down = srate / tf_params['decimate_factor']
+    mask_artifact = cycle_features['artifact'] == 0
+    inds_resp_cycle_sel = cycle_features[mask_artifact].index
     
     baseline_modes = ['z_score','rz_score']
     
@@ -124,6 +125,10 @@ def compute_phase_frequency(run_key, **p):
                                                                            cycle_times=cycle_times, 
                                                                            segment_ratios = p['segment_ratios'], 
                                                                            points_per_cycle = p['n_phase_bins'])
+    
+
+            
+            deformed_data_stacked = deformed_data_stacked[inds_resp_cycle_sel,:,:]
         
             
             if phase_freq_power is None: 
@@ -149,6 +154,8 @@ def compute_phase_frequency(run_key, **p):
                                                                            cycle_times=cycle_times, 
                                                                            segment_ratios = p['segment_ratios'], 
                                                                            points_per_cycle = p['n_phase_bins'])
+        
+        deformed_data_stacked = deformed_data_stacked[inds_resp_cycle_sel,:,:]
         
         itpc = np.abs(np.mean(np.exp(np.angle(deformed_data_stacked)* 1j), axis = 0))
         phase_freq_itpc.loc[chan, :,:] = itpc.T
