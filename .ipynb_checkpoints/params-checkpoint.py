@@ -350,3 +350,69 @@ maia_params = {
 relaxation_params = {}
 
 emotions_params = {}
+
+
+
+# Global concat of dataframes jobs params
+odor_rating_params = {'subject_keys':subject_keys,
+                     'date_of_data_generation':'06-06-2023',
+                    'rename_cols':{
+                        'odeur_name':'Odor_Name',
+                        'odeur_label':'Odor_Label',
+                        'appréciation_absolue_normalisée':'Absolute Hedonicity',
+                         'appréciation_relative_normalisée':'Hedonicity',
+                       'intensité_émotionnelle_relative_normalisée':'Emotional Intensity',
+                         'familiarité_relative_normalisée':'Familiarity',
+                           'intensité_relative_normalisée':'Stimulus Intensity',
+                           'evocation_relative_normalisée':'Memory Evocation'}
+                     }
+
+eda_concat_params = {'run_keys':run_keys,
+                    'eda_params':eda_params
+                    }
+
+hrv_concat_params = {'run_keys':run_keys,
+                    'ecg_params':ecg_params,
+                    }
+
+
+rsa_concat_params = {'run_keys':run_keys,
+                    'rsa_params':rsa_params,
+                    }
+
+bandpower_concat_params = {'run_keys':run_keys,
+                           'bandpower_params':bandpower_params
+                          }
+
+coherence_at_resp_concat_params = {'run_keys':run_keys,
+                           'coherence_params':coherence_params
+                          }
+         
+hilbert_mi_concat_params = {'run_keys':run_keys,
+                           'hilbert_resp_mi_params':hilbert_resp_mi
+                          }
+                           
+power_at_resp_concat_params = {'run_keys':run_keys,
+                           'power_at_resp_params':power_at_resp_params
+                          }
+
+modulation_cycle_signal_concat_params = {'run_keys':run_keys,
+                           'cycle_signal_modulation_params':cycle_signal_modulation_params
+                          }
+
+resp_features_concat_params = {'run_keys':run_keys,
+                           'label_resp_with_artifacts_params':label_resp_with_artifacts_params
+                          }
+
+
+stai_short_concat_params = {'run_keys':run_keys,
+                           'stai_shortform_params':stai_shortform_params
+                          }
+
+maia_concat_params = {'subject_keys':subject_keys,
+                     'maia_params':maia_params
+                     }
+
+stai_long_concat_params = {'run_keys':run_keys,
+                           'stai_longform_params':stai_longform_params
+                          }

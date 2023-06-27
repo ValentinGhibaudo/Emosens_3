@@ -18,6 +18,8 @@ stim_keys = [f'{sub_key}_{stim_key}' for sub_key in subject_keys for stim_key in
 
 run_keys_stai = [f'{sub_key}_{ses_key}' for sub_key in subject_keys for ses_key in ['ses01','ses02']]
 
+global_key = 'all'
+
 
 # USEFUL LISTS & DICTS
 eeg_chans = ['Fp1', 'Fz', 'F3', 'F7', 'FT9', 'FC5', 'FC1', 'C3', 'T7', 
@@ -79,10 +81,7 @@ fbands = {
     'beta':[12,30],
     'low_gamma':[30,45],
     'high_gamma':[55,100], 
-    '100_200':[100,200],
-    '200_300':[200,300],
-    '300_400':[300,400],
-    '400_500':[400,499]
+    'very_high_gamma':[100,200],
     }
 
 ecg_inversion = { 
@@ -350,3 +349,63 @@ maia_params = {
 relaxation_params = {}
 
 emotions_params = {}
+
+
+
+# Global concat of dataframes jobs params
+# odor_rating_params = {'subject_keys':subject_keys,
+#                      'date_of_data_generation':'06-06-2023',
+#                     'rename_cols':{
+#                         'odeur_name':'Odor_Name',
+#                         'odeur_label':'Odor_Label',
+#                         'appréciation_absolue_normalisée':'Absolute Hedonicity',
+#                          'appréciation_relative_normalisée':'Hedonicity',
+#                        'intensité_émotionnelle_relative_normalisée':'Emotional Intensity',
+#                          'familiarité_relative_normalisée':'Familiarity',
+#                            'intensité_relative_normalisée':'Stimulus Intensity',
+#                            'evocation_relative_normalisée':'Memory Evocation'}
+#                      }
+
+eda_concat_params = {'run_keys':run_keys,
+                    'eda_params':eda_params
+                    }
+
+hrv_concat_params = {'run_keys':run_keys,
+                    'ecg_params':ecg_params,
+                    }
+
+
+rsa_concat_params = {'run_keys':run_keys,
+                    'rsa_params':rsa_params,
+                    }
+
+bandpower_concat_params = {'run_keys':run_keys,
+                           'bandpower_params':bandpower_params
+                          }
+
+coherence_at_resp_concat_params = {'run_keys':run_keys,
+                           'coherence_params':coherence_params
+                          }
+         
+                           
+power_at_resp_concat_params = {'run_keys':run_keys,
+                           'power_at_resp_params':power_at_resp_params
+                          }
+
+
+resp_features_concat_params = {'run_keys':run_keys,
+                           'respiration_features_params':respiration_features_params
+                          }
+
+
+relaxation_concat_params = {'run_keys':subject_keys,
+                           'relaxation_params':relaxation_params
+                          }
+
+maia_concat_params = {'subject_keys':subject_keys,
+                     'maia_params':maia_params
+                     }
+
+# stai_long_concat_params = {'run_keys':run_keys,
+#                            'stai_longform_params':stai_longform_params
+#                           }

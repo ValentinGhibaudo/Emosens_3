@@ -44,5 +44,5 @@ def compute_all():
     jobtools.compute_job_list(psd_eeg_job, run_keys, force_recompute=False, engine='loop')
     
 if __name__ == '__main__':
-    # test_compute_psd()
-    compute_all()
+    test_compute_psd()
+    # compute_all()

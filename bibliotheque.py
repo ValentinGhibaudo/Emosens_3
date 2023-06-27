@@ -5,6 +5,15 @@ import numpy as np
 from configuration import base_folder, data_path
 from params import *
 
+def keep_clean(df_raw, metrics_to_clean, fill_method = 'ffill'):
+    df_raw_nan = df_raw.reset_index()
+    # mask_clean = (df_raw_nan['keep_chan'] == 1) & (df_raw_nan['keep_trial'] == 1)
+    mask_clean = (df_raw_nan['keep_session'] == 1) 
+    mask_bad = ~mask_clean
+    df_raw_nan.loc[mask_bad,metrics_to_clean] = np.nan
+    df_clean = df_raw_nan.fillna(method = fill_method)
+    return df_clean
+
 def mad(data, axis=0):
     """
     Compute median absolute deviation along 0 axis
@@ -46,11 +55,11 @@ def df_baseline(df, indexes, metrics, mode = 'ratio'):
     baseline = df[df['session'] == 'baseline'].set_index(indexes)
     
     if mode == 'ratio':
-        data_odor = odor.values / baseline.values
-        data_music = music.values / baseline.values
+        data_odor = odor[metrics].values / baseline[metrics].values
+        data_music = music[metrics].values / baseline[metrics].values
     elif mode == 'substract':
-        data_odor = odor.values - baseline.values
-        data_music = music.values - baseline.values
+        data_odor = odor[metrics].values - baseline[metrics].values
+        data_music = music[metrics].values - baseline[metrics].values
     
     df_odor = pd.DataFrame(data = data_odor, columns = metrics, index = odor.index)
     df_music = pd.DataFrame(data = data_music, columns = metrics, index = music.index)

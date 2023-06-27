@@ -45,7 +45,7 @@ def compute_eda_metrics(run_key, **p):
 
 def test_compute_eda():
     run_key = 'P01_baseline'
-    ds = compute_eda(run_key, **eda_params)
+    ds = compute_eda_metrics(run_key, **eda_params)
     print(ds)
     
 

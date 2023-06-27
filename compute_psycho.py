@@ -193,7 +193,7 @@ def compute_all():
 
 if __name__ == '__main__':
     # test_process_maia()
-    # test_process_stai_longform()
+    test_process_stai_longform()
     # test_process_relaxation()
-    test_process_emotions()
+    # test_process_emotions()
     # compute_all()

@@ -8,7 +8,7 @@ from compute_psd import psd_eeg_job
 
 def compute_bandpower(run_key, **p):
     participant, session = run_key.split('_')
-    psd_eeg = psd_eeg_job.get(run_key)['interp']
+    psd_eeg = psd_eeg_job.get(run_key)['psd']
     srate = psd_eeg.attrs['srate']
     
     rows = []
@@ -35,6 +35,7 @@ def compute_bandpower(run_key, **p):
 def test_compute_bandpower():
     run_key = 'P02_baseline'
     ds_bandpower = compute_bandpower(run_key, **bandpower_params)
+    print(ds_bandpower)
     
 
 bandpower_job = jobtools.Job(precomputedir, 'bandpower', bandpower_params, compute_bandpower)
@@ -44,7 +45,7 @@ def compute_all():
     jobtools.compute_job_list(bandpower_job, run_keys, force_recompute=False, engine='loop')
     
 if __name__ == '__main__':
-    test_compute_bandpower()
-    # compute_all()
+    # test_compute_bandpower()
+    compute_all()
 
 

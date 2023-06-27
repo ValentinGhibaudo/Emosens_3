@@ -50,5 +50,5 @@ def compute_all():
     jobtools.compute_job_list(power_at_resp_job, run_keys, force_recompute=False, engine='loop')
     
 if __name__ == '__main__':
-    # test_compute_power_at_resp()
-    compute_all()              
+    test_compute_power_at_resp()
+    # compute_all()              

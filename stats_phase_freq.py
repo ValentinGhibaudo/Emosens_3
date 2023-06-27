@@ -18,8 +18,6 @@ def get_N_resp_cycles(run_keys):
     for run_key in run_keys:
         participant, session = run_key.split('_')
         resp = respiration_features_job.get(run_key).to_dataframe()
-        resp.insert(0, 'session', session)
-        resp.insert(0, 'participant', participant)
         concat.append(resp)
 
     all_resp = pd.concat(concat)
