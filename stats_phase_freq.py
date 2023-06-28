@@ -56,7 +56,10 @@ for run_key in stim_keys:
                                      })
         
     all_phase_freq.loc[participant, session, :,:,:] = power.loc[baseline_mode , compress_cycle_mode,:,:].values
-       
+
+all_phase_freq = all_phase_freq.loc[:,:,:,:p['max_freq'],:]
+
+   
 ### FIG 1 = GLOBAL
 print('FIG 1')
 
@@ -95,12 +98,12 @@ for chan in global_phase_freq.coords['chan'].values:
                             vmax = vmax)
         ax.set_yscale('log')
 
-        if c == 0:
-            ax.set_yticks([4,8,12, 30, 65, 100 , 150])
-            ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
-            ax.set_ylabel('Freq [Hz]')
-        else:
-            ax.set_yticks([])
+
+        # ax.set_yticks([4,8,12, 30, 65, 100 , 150])
+        # ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
+        ax.set_yticks([4,8,12, 20, p['max_freq']])
+        ax.set_yticklabels([4,8,12,  20, p['max_freq']])
+        ax.set_ylabel('Freq [Hz]')
 
         ax.set_xlabel('Phase')
         
@@ -111,7 +114,7 @@ for chan in global_phase_freq.coords['chan'].values:
     cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
     clb = fig.colorbar(im, cax=cbar_ax)
     
-    clb_title = f'Power ({baseline_mode})'
+    clb_title = f'Power ({baseline_mode})\nvs Baseline'
     clb.ax.set_title(clb_title,fontsize=10)        
 
     file = fig_folder / 'power' / 'global' / f'{chan}.png'
@@ -163,12 +166,13 @@ for chan in all_phase_freq.coords['chan'].values:
                                 vmax = vmax)
             ax.set_yscale('log')
 
-            if c == 0:
-                ax.set_yticks([4,8,12, 30, 65, 100 , 150])
-                ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
-                ax.set_ylabel('Freq [Hz]')
-            else:
-                ax.set_yticks([])
+
+            # ax.set_yticks([4,8,12, 30, 65, 100 , 150])
+            # ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
+            ax.set_yticks([4,8,12, 20, p['max_freq']])
+            ax.set_yticklabels([4,8,12,  20, p['max_freq']])
+            ax.set_ylabel('Freq [Hz]')
+
 
             ax.set_xlabel('Phase')
 
@@ -179,7 +183,7 @@ for chan in all_phase_freq.coords['chan'].values:
         cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
         clb = fig.colorbar(im, cax=cbar_ax)
 
-        clb_title = f'Power ({baseline_mode})'
+        clb_title = f'Power ({baseline_mode})\nvs Baseline'
         clb.ax.set_title(clb_title,fontsize=10)        
 
         file = folder_path / f'{participant}.png'

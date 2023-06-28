@@ -307,9 +307,13 @@ phase_freq_params = {
 phase_freq_fig_params = {
     'phase_freq_params':phase_freq_params,
     'baseline_mode':'rz_score',
-    'compress_cycle_mode':'med_cycle',
+    # 'compress_cycle_mode':'med_cycle',
+    # 'baseline_mode':'z_score',
+    # 'compress_cycle_mode':'mean_cycle',
+    'compress_cycle_mode':'q75_cycle',
     'stim_sessions':['music','odor'],
-    'delta_colorlim':0.
+    'delta_colorlim':0.,
+    'max_freq':20
 }
 
 eda_params = {
@@ -350,6 +354,18 @@ relaxation_params = {}
 
 emotions_params = {}
 
+cycle_signal_params = {
+    'interp_artifact_params':interp_artifact_params,
+    'respiration_features_params':respiration_features_params,
+    'n_phase_bins':1000,
+    'segment_ratios':0.4,
+    'chans':eeg_chans,
+    'session_duration':session_duration
+}
+
+cycle_signal_modulation_params = {
+    'cycle_signal_params':cycle_signal_params,
+}
 
 
 # Global concat of dataframes jobs params
@@ -409,3 +425,8 @@ maia_concat_params = {'subject_keys':subject_keys,
 # stai_long_concat_params = {'run_keys':run_keys,
 #                            'stai_longform_params':stai_longform_params
 #                           }
+
+
+modulation_cycle_signal_concat_params = {'run_keys':run_keys,
+                           'cycle_signal_modulation_params':cycle_signal_modulation_params
+                          }

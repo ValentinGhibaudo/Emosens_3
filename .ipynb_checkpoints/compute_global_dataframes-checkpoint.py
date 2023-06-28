@@ -17,6 +17,7 @@ from compute_rri import ecg_peak_job
 from compute_psycho import relaxation_job, maia_job, stai_longform_job
 from compute_resp_features import respiration_features_job
 from compute_rsa import rsa_features_job
+from compute_cycle_signal import modulation_cycle_signal_job
 
 
 #### FUNCTIONS
@@ -333,11 +334,37 @@ def test_relaxation_concat():
 relaxation_concat_job = jobtools.Job(precomputedir, 'relaxation_concat', relaxation_concat_params, relaxation_concat)
 jobtools.register_job(relaxation_concat_job)
 
+# CYCLE SIGNAL MODULATION
+def modulation_cycle_signal_concat(global_key, **p):
+    concat = []
+    for run_key in p['run_keys']:
+        # mapper_keep_chans = get_bad_chan_mapper(run_key)
+        df_run_key = modulation_cycle_signal_job.get(run_key).to_dataframe()
+        # df_run_key['keep_chan'] = df_run_key['chan'].map(mapper_keep_chans)
+        sub, ses = run_key.split('_')
+        state, trait = get_stai_long_mapper(sub)
+        df_run_key['stai_state'] = state
+        df_run_key['stai_trait'] = trait
+        keep = is_session_clean_of_artifact(run_key)
+        df_run_key['keep_session'] = keep
+        concat.append(df_run_key)
+    df_return = pd.concat(concat)
+    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    return xr.Dataset(df_return.reset_index(drop = True))
+
+def test_modulation_cycle_signal_concat():
+    ds = modulation_cycle_signal_concat(global_key, **modulation_cycle_signal_concat_params)
+    print(ds.to_dataframe())
+    
+modulation_cycle_signal_concat_job = jobtools.Job(precomputedir, 'modulation_cycle_signal_concat', modulation_cycle_signal_concat_params, modulation_cycle_signal_concat)
+jobtools.register_job(modulation_cycle_signal_concat_job)
+
 
 def compute_and_save_all():
     jobs = ['maia','bandpower','coherence_at_resp',
             'eda','hrv','power_at_resp','relaxation',
-            'resp_features','rsa']
+            'resp_features','rsa','cycle_signal_modulation']
 
     for job in jobs:
         file = base_folder / 'Tables' / f'{job}.xlsx'
@@ -361,6 +388,8 @@ def compute_and_save_all():
             resp_features_concat_job.get(global_key).to_dataframe().to_excel(file)
         elif job == 'rsa':
             rsa_concat_job.get(global_key).to_dataframe().to_excel(file)
+        elif job == 'cycle_signal_modulation':
+            modulation_cycle_signal_concat_job.get(global_key).to_dataframe().to_excel(file)
     
 if __name__ == '__main__':
 
@@ -374,6 +403,7 @@ if __name__ == '__main__':
     # test_power_at_resp_concat()
     # test_resp_features_concat()
     # test_relaxation_concat()
+    # test_modulation_cycle_signal_concat()
 
     compute_and_save_all()
     
