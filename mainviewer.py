@@ -131,7 +131,7 @@ def get_viewer_from_run_key(run_key, parent=None):
     view_eeg.params['display_labels'] = True
     view_eeg.params['scale_mode'] = 'by_channel'
     for c, chan_name in enumerate(channel_names):
-        view_eeg.by_channel_params[ f'ch{c}' ,'visible'] = c < 3
+        view_eeg.by_channel_params[ f'ch{c}' ,'visible'] = c < 5
 
     # VIEWER EEG 2
     # artifacts
@@ -147,7 +147,7 @@ def get_viewer_from_run_key(run_key, parent=None):
     view_eeg.params['display_labels'] = True
     view_eeg.params['scale_mode'] = 'by_channel'
     for c, chan_name in enumerate(channel_names):
-        view_eeg.by_channel_params[ f'ch{c}' ,'visible'] = c < 35
+        view_eeg.by_channel_params[ f'ch{c}' ,'visible'] = c < 5
 
 
 
@@ -176,7 +176,7 @@ def get_viewer_from_run_key(run_key, parent=None):
 
 def test_get_viewer():
     
-    run_key = 'P10_odor'
+    run_key = 'P10_baseline'
 
     # ds = respiration_features_job.get(run_key)
     # print(ds)
