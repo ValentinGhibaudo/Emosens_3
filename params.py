@@ -313,6 +313,7 @@ phase_freq_fig_params = {
     'compress_cycle_mode':'q75_cycle',
     'stim_sessions':['music','odor'],
     'delta_colorlim':0.,
+    'nwin_smooth':5,
     'max_freq':20
 }
 

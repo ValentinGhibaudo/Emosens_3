@@ -8,6 +8,7 @@ from bibliotheque import init_nan_da
 from params import *
 from configuration import base_folder
 import os
+import ghibtools as gh
 
 p = phase_freq_fig_params
 baseline_mode = p['baseline_mode']
@@ -57,6 +58,7 @@ for run_key in stim_keys:
         
     all_phase_freq.loc[participant, session, :,:,:] = power.loc[baseline_mode , compress_cycle_mode,:,:].values
 
+# all_phase_freq[:] = gh.sliding_mean(all_phase_freq.values, nwin = p['nwin_smooth'], axis = -1)  
 all_phase_freq = all_phase_freq.loc[:,:,:,:p['max_freq'],:]
 
    
@@ -103,7 +105,10 @@ for chan in global_phase_freq.coords['chan'].values:
         # ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
         ax.set_yticks([4,8,12, 20, p['max_freq']])
         ax.set_yticklabels([4,8,12,  20, p['max_freq']])
-        ax.set_ylabel('Freq [Hz]')
+        ax.minorticks_off()
+        
+        if c == 0:
+            ax.set_ylabel('Freq [Hz]')
 
         ax.set_xlabel('Phase')
         
