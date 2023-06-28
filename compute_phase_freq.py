@@ -97,7 +97,6 @@ def compute_phase_frequency(run_key, **p):
     baseline_modes = ['z_score','rz_score']
     
     phase_freq_power = None 
-    phase_freq_itpc = None
     
     for chan in tf_params['chans']:
         
@@ -142,27 +141,9 @@ def compute_phase_frequency(run_key, **p):
             phase_freq_power.loc[mode, 'med_cycle', chan, :,:] = np.median(deformed_data_stacked, axis = 0).T
             phase_freq_power.loc[mode, 'q75_cycle', chan, :,:] = np.quantile(deformed_data_stacked, q = 0.75, axis = 0).T
             
-        if phase_freq_itpc is None:
-            phase_freq_itpc = init_nan_da({
-                          'chan':tf_params['chans'],
-                          'freq':tf_dict['f'], 
-                          'phase':np.linspace(0,1,p['n_phase_bins'])
-            })
-            
-        deformed_data_stacked = physio.deform_traces_to_cycle_template(data = angles.T, 
-                                                                           times = tf_dict['t'], 
-                                                                           cycle_times=cycle_times, 
-                                                                           segment_ratios = p['segment_ratios'], 
-                                                                           points_per_cycle = p['n_phase_bins'])
-        
-        deformed_data_stacked = deformed_data_stacked[inds_resp_cycle_sel,:,:]
-        
-        itpc = np.abs(np.mean(np.exp(np.angle(deformed_data_stacked)* 1j), axis = 0))
-        phase_freq_itpc.loc[chan, :,:] = itpc.T
         
     ds = xr.Dataset()
     ds['power'] = phase_freq_power
-    ds['itpc'] = phase_freq_itpc
     
     return ds
 

@@ -34,6 +34,7 @@ def test_compute_ecg():
     run_key = 'P05_baseline'
     ds = compute_ecg(run_key, **ecg_params)
     print(ds)
+    print(ds.attrs['srate'])
     
 
 # ECG PEAKS    
