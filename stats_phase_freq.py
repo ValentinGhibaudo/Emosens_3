@@ -37,6 +37,23 @@ ax_x_width = 0.02
 ax_y_start = 0
 ax_y_height = 1
 
+# FIGS TEXT PRELOAD VARIABLES
+subject_compress_mode = p['compress_subject']
+cycle_compress_mode = p['compress_cycle_mode']
+sup_fontsize=20
+sup_pos=1.05
+yticks = [4,8,12, p['max_freq']]
+
+baseline_mode = p["baseline_mode"]
+low_q_clim = p['delta_colorlim']
+high_q_clim = 1  - p['delta_colorlim']
+delta_clim= f'{low_q_clim} - {high_q_clim}'
+clb_fontsize = 10
+clb_title =f'Power\n({baseline_mode} vs baseline)\nDelta clim : {delta_clim}'   
+
+x_axvline = 0.4
+figsize = (15,5)
+
 
 # CONCAT
 all_phase_freq = None
@@ -57,22 +74,24 @@ for run_key in stim_keys:
                                      })
         
     all_phase_freq.loc[participant, session, :,:,:] = power.loc[baseline_mode , compress_cycle_mode,:,:].values
-
-# all_phase_freq[:] = gh.sliding_mean(all_phase_freq.values, nwin = p['nwin_smooth'], axis = -1)  
+  
 all_phase_freq = all_phase_freq.loc[:,:,:,:p['max_freq'],:]
 
    
 ### FIG 1 = GLOBAL
 print('FIG 1')
 
-global_phase_freq = all_phase_freq.mean('participant')
+if p['compress_subject'] == 'Mean':
+    global_phase_freq = all_phase_freq.mean('participant')
+elif p['compress_subject'] == 'Median':
+    global_phase_freq = all_phase_freq.median('participant')
 
 
 for chan in global_phase_freq.coords['chan'].values:
 
-    fig, axs = plt.subplots(ncols = len(p['stim_sessions']), figsize = (15,5), constrained_layout = True)
-
-    fig.suptitle(f'Mean phase-frequency power map across {len(subject_keys)} subjects in electrode {chan}', fontsize = 20, y = 1.05) 
+    fig, axs = plt.subplots(ncols = len(p['stim_sessions']), figsize = figsize, constrained_layout = True)
+    suptitle = f'{subject_compress_mode} phase-frequency power map across {len(subject_keys)} subjects in electrode {chan} ({cycle_compress_mode})'
+    fig.suptitle(suptitle, fontsize = sup_fontsize, y = sup_pos) 
 
     vmin = global_phase_freq.sel(chan=chan).quantile(p['delta_colorlim'])
     vmax = global_phase_freq.sel(chan=chan).quantile(1 - p['delta_colorlim'])
@@ -98,29 +117,22 @@ for chan in global_phase_freq.coords['chan'].values:
                             norm = 'linear',
                             vmin = vmin,
                             vmax = vmax)
+        
         ax.set_yscale('log')
-
-
-        # ax.set_yticks([4,8,12, 30, 65, 100 , 150])
-        # ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
-        ax.set_yticks([4,8,12, 20, p['max_freq']])
-        ax.set_yticklabels([4,8,12,  20, p['max_freq']])
+        ax.set_yticks(ticks = yticks, labels = yticks)
         ax.minorticks_off()
-        
-        if c == 0:
-            ax.set_ylabel('Freq [Hz]')
-
         ax.set_xlabel('Phase')
-        
-        ax.axvline(x = 0.4, color = 'r')
+        if c != 0:
+            ax.tick_params(labelleft = False)
+
+        ax.axvline(x = x_axvline, color = 'r')
         N = N_cycles_pooled.loc[session, 'N']
         ax.set_title(f'{session} - N : {N}')
 
     cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
     clb = fig.colorbar(im, cax=cbar_ax)
     
-    clb_title = f'Power ({baseline_mode})\nvs Baseline'
-    clb.ax.set_title(clb_title,fontsize=10)        
+    clb.ax.set_title(clb_title,fontsize=clb_fontsize)        
 
     file = fig_folder / 'power' / 'global' / f'{chan}.png'
     fig.savefig(file, bbox_inches = 'tight') 
@@ -141,9 +153,9 @@ for chan in all_phase_freq.coords['chan'].values:
 
     for participant in subject_keys:
 
-        fig, axs = plt.subplots(ncols = len(p['stim_sessions']), figsize = (15,5), constrained_layout = True)
+        fig, axs = plt.subplots(ncols = len(p['stim_sessions']), figsize = figsize, constrained_layout = True)
 
-        fig.suptitle(f'Mean phase-frequency power in electrode {chan} in participant {participant}', fontsize = 20, y = 1.05) 
+        fig.suptitle(f'Mean phase-frequency power in electrode {chan} in participant {participant}', fontsize = sup_fontsize, y = sup_pos) 
 
         vmin = all_phase_freq.sel(participant = participant, chan=chan).quantile(p['delta_colorlim'])
         vmax = all_phase_freq.sel(participant = participant, chan=chan).quantile(1 - p['delta_colorlim'])
@@ -170,26 +182,23 @@ for chan in all_phase_freq.coords['chan'].values:
                                 vmin = vmin,
                                 vmax = vmax)
             ax.set_yscale('log')
+            ax.set_yticks(ticks = yticks, labels = yticks)
+            ax.minorticks_off()
 
-
-            # ax.set_yticks([4,8,12, 30, 65, 100 , 150])
-            # ax.set_yticklabels([4,8,12, 30, 65, 100 , 150])
-            ax.set_yticks([4,8,12, 20, p['max_freq']])
-            ax.set_yticklabels([4,8,12,  20, p['max_freq']])
             ax.set_ylabel('Freq [Hz]')
-
-
             ax.set_xlabel('Phase')
 
-            ax.axvline(x = 0.4, color = 'r')
+            if c != 0:
+                ax.tick_params(labelleft = False)
+
+            ax.axvline(x =x_axvline, color = 'r')
             N = N_cycles.loc[(participant,session), 'N']
             ax.set_title(f'{session} - N : {N}')
 
         cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
         clb = fig.colorbar(im, cax=cbar_ax)
 
-        clb_title = f'Power ({baseline_mode})\nvs Baseline'
-        clb.ax.set_title(clb_title,fontsize=10)        
+        clb.ax.set_title(clb_title,fontsize=clb_fontsize)        
 
         file = folder_path / f'{participant}.png'
         fig.savefig(file, bbox_inches = 'tight') 
