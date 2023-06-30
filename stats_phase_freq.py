@@ -54,6 +54,9 @@ clb_title =f'Power\n({baseline_mode} vs baseline)\nDelta clim : {delta_clim}'
 x_axvline = 0.4
 figsize = (15,5)
 
+vmin = 0
+vmax = 3
+cmap = 'viridis'
 
 # CONCAT
 all_phase_freq = None
@@ -77,7 +80,6 @@ for run_key in stim_keys:
   
 all_phase_freq = all_phase_freq.loc[:,:,:,:p['max_freq'],:]
 
-   
 ### FIG 1 = GLOBAL
 print('FIG 1')
 
@@ -93,18 +95,18 @@ for chan in global_phase_freq.coords['chan'].values:
     suptitle = f'{subject_compress_mode} phase-frequency power map across {len(subject_keys)} subjects in electrode {chan} ({cycle_compress_mode})'
     fig.suptitle(suptitle, fontsize = sup_fontsize, y = sup_pos) 
 
-    vmin = global_phase_freq.sel(chan=chan).quantile(p['delta_colorlim'])
-    vmax = global_phase_freq.sel(chan=chan).quantile(1 - p['delta_colorlim'])
+    # vmin = global_phase_freq.sel(chan=chan).quantile(low_q_clim)
+    # vmax = global_phase_freq.sel(chan=chan).quantile(high_q_clim)
     
 
-    if vmax > 0 and vmin < 0:
-        vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
-        vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
-        cmap = 'seismic'
-    else:
-        vmin = vmin
-        vmax = vmax
-        cmap = 'viridis'
+    # if vmax > 0 and vmin < 0:
+    #     vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
+    #     vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
+    #     cmap = 'seismic'
+    # else:
+    #     vmin = vmin
+    #     vmax = vmax
+    #     cmap = 'viridis'
         
     
     for c, session in enumerate(p['stim_sessions']):
@@ -122,8 +124,9 @@ for chan in global_phase_freq.coords['chan'].values:
         ax.set_yticks(ticks = yticks, labels = yticks)
         ax.minorticks_off()
         ax.set_xlabel('Phase')
-        if c != 0:
-            ax.tick_params(labelleft = False)
+        
+        if c == 0:
+            ax.set_ylabel('Freq [Hz]')
 
         ax.axvline(x = x_axvline, color = 'r')
         N = N_cycles_pooled.loc[session, 'N']
@@ -131,7 +134,8 @@ for chan in global_phase_freq.coords['chan'].values:
 
     cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
     clb = fig.colorbar(im, cax=cbar_ax)
-    
+    # cbar_ax.set_ylim(-2,3)
+
     clb.ax.set_title(clb_title,fontsize=clb_fontsize)        
 
     file = fig_folder / 'power' / 'global' / f'{chan}.png'
@@ -157,18 +161,18 @@ for chan in all_phase_freq.coords['chan'].values:
 
         fig.suptitle(f'Mean phase-frequency power in electrode {chan} in participant {participant}', fontsize = sup_fontsize, y = sup_pos) 
 
-        vmin = all_phase_freq.sel(participant = participant, chan=chan).quantile(p['delta_colorlim'])
-        vmax = all_phase_freq.sel(participant = participant, chan=chan).quantile(1 - p['delta_colorlim'])
+        # vmin = all_phase_freq.sel(participant = participant, chan=chan).quantile(p['delta_colorlim'])
+        # vmax = all_phase_freq.sel(participant = participant, chan=chan).quantile(1 - p['delta_colorlim'])
 
 
-        if vmax > 0 and vmin < 0:
-            vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
-            vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
-            cmap = 'seismic'
-        else:
-            vmin = vmin
-            vmax = vmax
-            cmap = 'viridis'
+        # if vmax > 0 and vmin < 0:
+        #     vmin = vmin if abs(vmin) > abs(vmax) else -vmax 
+        #     vmax = vmax if abs(vmax) > abs(vmin) else abs(vmin)
+        #     cmap = 'seismic'
+        # else:
+        #     vmin = vmin
+        #     vmax = vmax
+        #     cmap = 'viridis'
 
 
         for c, session in enumerate(p['stim_sessions']):
@@ -185,11 +189,9 @@ for chan in all_phase_freq.coords['chan'].values:
             ax.set_yticks(ticks = yticks, labels = yticks)
             ax.minorticks_off()
 
-            ax.set_ylabel('Freq [Hz]')
+            if c == 0:
+                ax.set_ylabel('Freq [Hz]')
             ax.set_xlabel('Phase')
-
-            if c != 0:
-                ax.tick_params(labelleft = False)
 
             ax.axvline(x =x_axvline, color = 'r')
             N = N_cycles.loc[(participant,session), 'N']

@@ -297,6 +297,18 @@ time_freq_params = {
     'amplitude_exponent':2
 }
 
+power_params = {
+    'interp_artifact_params':interp_artifact_params,
+    'chans':['F3','F4'],
+    'decimate_factor':10,
+    'n_freqs':150,
+    'f_start':4,
+    'f_stop':150,
+    'c_start':10,
+    'c_stop':30,
+    'amplitude_exponent':2
+}
+
 phase_freq_params = {
     'respiration_features_params':respiration_features_params,
     'time_freq_params':time_freq_params,

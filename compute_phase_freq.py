@@ -28,6 +28,52 @@ def sig_to_tf(sig, p, srate):
     tf = signal.fftconvolve(sigs, mw_family, mode = 'same', axes = 1)
     return {'t':time_vector_down, 'f':freqs, 'tf':tf}
 
+def sig_to_tf_bis(sig, p, srate):
+    freqs = np.logspace(np.log10(p['f_start']), np.log10(p['f_stop']), num = p['n_freqs'], base = 10)
+    cycles = np.logspace(np.log10(p['c_start']), np.log10(p['c_stop']), num = p['n_freqs'], base = 10)
+
+    mw_family = define_morlet_family(freqs = freqs , cycles = cycles, srate=srate)
+
+    sigs = np.tile(sig, (p['n_freqs'],1))
+    tf = signal.fftconvolve(sigs, mw_family, mode = 'same', axes = 1)
+    return {'f':freqs, 'tf':tf}
+
+def compute_power(run_key, **p):
+    eeg = eeg_interp_artifact_job.get(run_key)['interp']
+    srate = eeg.attrs['srate']
+    down_srate = srate /  p['decimate_factor']
+
+    powers = None
+
+    for chan in p['chans']:
+        sig = eeg.sel(chan = chan).values
+        tf_dict = sig_to_tf_bis(sig, p, srate)
+        power = np.abs(tf_dict['tf']) ** p['amplitude_exponent']
+        power = signal.decimate(x = power, q = p['decimate_factor'], axis = 1)
+        t_down = np.arange(0, power.shape[1] / down_srate, 1 / down_srate)
+
+        if powers is None:
+            powers = init_nan_da({'chan':p['chans'],
+                                'freq':tf_dict['f'],
+                                'time':t_down})
+        powers.loc[chan, :,:] = power
+
+    powers.attrs['down_srate'] = down_srate
+    
+    ds = xr.Dataset()
+    ds['power'] = powers
+    return ds
+
+def test_compute_power():
+    run_key = 'P02_baseline'
+    ds = compute_power(run_key, **power_params)
+    print(ds)
+    
+
+power_job = jobtools.Job(precomputedir, 'power', power_params, compute_power)
+jobtools.register_job(power_job)
+
+
 
 def compute_baseline_power(run_key, **p):
     
@@ -165,12 +211,15 @@ def compute_all():
     # jobtools.compute_job_list(baseline_power_job, baseline_keys, force_recompute=False, engine='joblib', n_jobs = 5)
     
     # jobtools.compute_job_list(phase_freq_job, stim_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(phase_freq_job, stim_keys, force_recompute=False, engine='joblib', n_jobs = 3)
+    # jobtools.compute_job_list(phase_freq_job, stim_keys, force_recompute=False, engine='joblib', n_jobs = 3)
+
+    jobtools.compute_job_list(power_job, run_keys, force_recompute=False, engine='loop')
 
 
 if __name__ == '__main__':
     # test_compute_baseline_power()
     # test_compute_phase_frequency()
+    # test_compute_power()
     compute_all()
         
         
