@@ -390,6 +390,9 @@ relaxation_params = {}
 
 emotions_params = {}
 
+oas_params = {}
+bmrq_params = {}
+
 cycle_signal_params = {
     'interp_artifact_params':interp_artifact_params,
     'respiration_features_params':respiration_features_params,
@@ -465,4 +468,13 @@ maia_concat_params = {'subject_keys':subject_keys,
 
 modulation_cycle_signal_concat_params = {'run_keys':run_keys,
                            'cycle_signal_modulation_params':cycle_signal_modulation_params
+                          }
+
+
+oas_concat_params = {'run_keys':subject_keys,
+                           'oas_params':oas_params
+                          }
+
+bmrq_concat_params = {'run_keys':subject_keys,
+                           'bmrq_params':bmrq_params
                           }

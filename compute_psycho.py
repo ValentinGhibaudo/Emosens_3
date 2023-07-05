@@ -182,18 +182,73 @@ jobtools.register_job(emotions_job)
 
 
 ###
+# OAS
+def process_oas(sub, **p):
+    file = data_path / sub / 'questionnaires' / 'ses02' / f'OAS_session2_{sub}.xlsx'
+    df = pd.read_excel(file)
+    scores_corrected = []
+    for i , row in df.iterrows():
+        if row['correction'] == '-':
+            scores_corrected.append(6 - row['score'])
+        else:
+            scores_corrected.append(row['score'])
+    mean = np.mean(scores_corrected)
+    df_return = pd.Series()
+    df_return['participant'] = sub
+    df_return['OAS'] = mean
+    return xr.Dataset(df_return.to_frame().T)
+
+def test_process_oas():
+    sub = 'P01'
+    ds = process_oas(sub, **oas_params)
+    print(ds.to_dataframe())
+    
+oas_job = jobtools.Job(precomputedir, 'oas', oas_params, process_oas)
+jobtools.register_job(oas_job)
+
+###
+# BMRQ
+def process_bmrq(sub, **p):
+    file = data_path / sub / 'questionnaires' / 'ses02' / f'BMRQ_session2_{sub}.xlsx'
+    df = pd.read_excel(file)
+    scores_corrected = []
+    for i , row in df.iterrows():
+        if row['correction'] == '-':
+            scores_corrected.append(6 - row['score'])
+        else:
+            scores_corrected.append(row['score'])
+    mean = np.mean(scores_corrected)
+    df_return = pd.Series()
+    df_return['participant'] = sub
+    df_return['BMRQ'] = mean
+    return xr.Dataset(df_return.to_frame().T)
+
+def test_process_bmrq():
+    sub = 'P01'
+    ds = process_bmrq(sub, **bmrq_params)
+    print(ds.to_dataframe())
+    
+bmrq_job = jobtools.Job(precomputedir, 'bmrq', bmrq_params, process_bmrq)
+jobtools.register_job(bmrq_job)
+
+
+###
 
 def compute_all():
     # jobtools.compute_job_list(maia_job, subject_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(stai_longform_job, run_keys_stai, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(relaxation_job, subject_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(emotions_job, subject_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(emotions_job, subject_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(oas_job, subject_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(bmrq_job, subject_keys, force_recompute=False, engine='loop')
 
 
 
 if __name__ == '__main__':
     # test_process_maia()
-    test_process_stai_longform()
+    # test_process_stai_longform()
     # test_process_relaxation()
     # test_process_emotions()
+    test_process_oas()
+    # test_process_bmrq()
     # compute_all()
