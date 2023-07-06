@@ -401,11 +401,11 @@ if __name__ == '__main__':
     # test_compute_baseline()
     # test_compute_phase_frequency()
     # test_phase_freq_concat()
-    # compute_phase_freq_concat_job()
+    compute_phase_freq_concat_job()
     # test_compute_erp_time_freq()
 
     # test_erp_time_freq_concat()
-    compute_erp_concat_job()
+    # compute_erp_concat_job()
     
     # compute_all()
         

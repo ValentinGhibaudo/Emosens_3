@@ -314,7 +314,7 @@ phase_freq_concat_params = {
     'phase_freq_params':phase_freq_params,
     'baseline_mode':'rz_score',
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
-    'max_freq':150
+    'max_freq':20
 }
 
 phase_freq_fig_params = {
@@ -340,7 +340,7 @@ erp_time_freq_concat_params = {
     'run_keys':[f'{sub}_{ses}' for ses in ['music','odor'] for sub in subject_keys],
     'erp_time_freq_params':erp_time_freq_params,
     'baseline_mode':'rz_score',
-    'max_freq':150
+    'max_freq':20
 }
 
 erp_fig_params = {
