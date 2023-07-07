@@ -69,8 +69,8 @@ def global_phase_freq_fig(chan, cycle_compress_mode, **p):
     elif p['compress_subject'] == 'q75':
         global_phase_freq = all_phase_freq.quantile(q=0.75, dim='participant')
 
-    vmin = global_phase_freq.quantile(low_q_clim)
-    vmax = global_phase_freq.quantile(high_q_clim)
+    vmin = global_phase_freq.loc[:,cycle_compress_mode,:,:,:].quantile(low_q_clim)
+    vmax = global_phase_freq.loc[:,cycle_compress_mode,:,:,:].quantile(high_q_clim)
 
     fig, axs = plt.subplots(ncols = len(sessions), figsize = figsize, constrained_layout = True)
     suptitle = f'{subject_compress_mode} phase-frequency map across {len(subject_keys)} subjects in electrode {chan} ({cycle_compress_mode})'
@@ -94,6 +94,7 @@ def global_phase_freq_fig(chan, cycle_compress_mode, **p):
         ax.minorticks_off()
 
         ax.set_xlabel('Phase')
+        ax.set_ylabel('Freq [Hz]')
 
         ax.axvline(x = x_axvline, color = 'r')
         N = N_cycles_pooled.loc[ses, 'N']
@@ -126,7 +127,7 @@ def subject_phase_freq_fig(participant, chan, **p):
 
     N_cycles = get_N_resp_cycles(run_keys)
 
-    cycle_compress_mode = 10
+    cycle_compress_mode = p['quantile_by_subject_fig']
 
     all_phase_freq = phase_freq_concat_job.get(global_key)['phase_freq_concat']
 
@@ -159,8 +160,11 @@ def subject_phase_freq_fig(participant, chan, **p):
     folder_path = base_folder / 'Figures' / 'phase_freq' / 'power' / 'by_subject' / chan 
 
 
-    vmin = all_phase_freq.quantile(low_q_clim)
-    vmax = all_phase_freq.quantile(high_q_clim)
+    # vmin = all_phase_freq.quantile(low_q_clim)
+    # vmax = all_phase_freq.quantile(high_q_clim)
+
+    vmin = all_phase_freq.loc[participant,:,cycle_compress_mode,chan,:,:].quantile(low_q_clim)
+    vmax = all_phase_freq.loc[participant,:,cycle_compress_mode,chan,:,:].quantile(high_q_clim)
 
 
     fig, axs = plt.subplots(ncols = len(sessions), figsize = figsize, constrained_layout = True)
@@ -184,6 +188,7 @@ def subject_phase_freq_fig(participant, chan, **p):
         ax.minorticks_off()
 
         ax.set_xlabel('Phase')
+        ax.set_ylabel('Freq [Hz]')
 
 
         ax.axvline(x = x_axvline, color = 'r')  
@@ -216,12 +221,12 @@ def compute_all():
     quantile_keys = [ str(e) for e in phase_freq_params['compress_cycle_modes']]
 
 
-    # global_phase_freq_fig_keys = [(chan_key, quantile_key) for quantile_key in quantile_keys for chan_key in chan_keys]
+    global_phase_freq_fig_keys = [(chan_key, quantile_key) for quantile_key in quantile_keys for chan_key in chan_keys]
 
-    # jobtools.compute_job_list(global_phase_freq_fig_job, global_phase_freq_fig_keys, force_recompute=True, engine='slurm',
-    #                           slurm_params={'cpus-per-task':'10', 'mem':'30G', },
-    #                           module_name='stats_phase_freq',
-    #                           )
+    jobtools.compute_job_list(global_phase_freq_fig_job, global_phase_freq_fig_keys, force_recompute=True, engine='slurm',
+                              slurm_params={'cpus-per-task':'10', 'mem':'30G', },
+                              module_name='stats_phase_freq',
+                              )
 
 
 

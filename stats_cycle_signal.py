@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from compute_cycle_signal import cycle_signal_job
 from compute_resp_features import respiration_features_job
+from compute_global_dataframes import oas_concat_job, bmrq_concat_job
 from bibliotheque import get_pos, init_nan_da
 from params import subject_keys, eeg_chans, run_keys 
 from configuration import base_folder
@@ -120,14 +121,21 @@ for chan in p['chans']:
 
 print('FIG 2')
 
+oas = oas_concat_job.get(global_key).to_dataframe().set_index('participant')
+bmrq = bmrq_concat_job.get(global_key).to_dataframe().set_index('participant')
+
 for sub in subject_keys:
+    
+    bmrq_sub = bmrq.loc[sub, 'BMRQ'].round(3)
+    oas_sub = oas.loc[sub, 'OAS'].round(3)
+    
     for chan in p['chans']:
         
         vmin_eeg = all_cycle_signal.sel(participant = sub, chan=chan).min()
         vmax_eeg = all_cycle_signal.sel(participant = sub, chan=chan).max()
         
         fig, axs = plt.subplots(ncols = len(session_keys), figsize = (15,5), constrained_layout = True)
-        fig.suptitle(f'Mean EEG waveform along respiration phase in {sub} at electrode {chan}', fontsize = 20, y = 1.05) 
+        fig.suptitle(f'Mean EEG waveform along respiration phase in {sub} at electrode {chan} \n OAS : {oas_sub} - BMRQ : {bmrq_sub}', fontsize = 20, y = 1.05) 
 
         for c, session in enumerate(session_keys):
 

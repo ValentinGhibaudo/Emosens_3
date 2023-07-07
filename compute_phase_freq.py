@@ -301,7 +301,10 @@ def compute_erp_time_freq(sub, ses, **p):
                                         'freq':power_all['freq'].values,
                                         'time':erp_power_chan.coords['time'].values})
                 
-                erp_power.loc[mode, chan, center_slice, :,:] = erp_power_chan.mean('cycle').values
+                if type(p['compress_cycle_mode']) is str:
+                    erp_power.loc[mode, chan, center_slice, :,:] = erp_power_chan.mean(dim = 'cycle').values
+                elif type(p['compress_cycle_mode']) is float:
+                    erp_power.loc[mode, chan, center_slice, :,:] = erp_power_chan.quantile(dim = 'cycle', q = p['compress_cycle_mode']).values
      
     erp_power.attrs['down_srate'] = down_srate
     ds = xr.Dataset()
@@ -383,10 +386,10 @@ def compute_all():
     #                         module_name='compute_phase_freq')
 
     run_keys_erp = [(sub, ses) for ses in ['music','odor'] for sub in subject_keys]
-    jobtools.compute_job_list(erp_time_freq_job, run_keys_erp, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(erp_time_freq_job, run_keys_erp, force_recompute=False, engine='slurm',
-    #                         slurm_params={'cpus-per-task':'20', 'mem':'30G', },
-    #                         module_name='compute_phase_freq')
+    # jobtools.compute_job_list(erp_time_freq_job, run_keys_erp, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(erp_time_freq_job, run_keys_erp, force_recompute=False, engine='slurm',
+                            slurm_params={'cpus-per-task':'20', 'mem':'30G', },
+                            module_name='compute_phase_freq')
 
 
 
@@ -399,13 +402,14 @@ def compute_all():
 if __name__ == '__main__':
     # test_compute_power()
     # test_compute_baseline()
+    
     # test_compute_phase_frequency()
     # test_phase_freq_concat()
-    compute_phase_freq_concat_job()
-    # test_compute_erp_time_freq()
+    # compute_phase_freq_concat_job()
 
+    # test_compute_erp_time_freq()
     # test_erp_time_freq_concat()
-    # compute_erp_concat_job()
+    compute_erp_concat_job()
     
     # compute_all()
         

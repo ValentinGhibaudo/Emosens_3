@@ -145,8 +145,11 @@ def subject_erp_fig(participant, chan, center, **p):
 
     cmap = p['cmap']
 
-    vmin = all_erp.quantile(low_q_clim)
-    vmax = all_erp.quantile(high_q_clim)
+    # vmin = all_erp.quantile(low_q_clim)
+    # vmax = all_erp.quantile(high_q_clim)
+
+    vmin = all_erp.loc[participant,:,chan,:,:,:].quantile(low_q_clim)
+    vmax = all_erp.loc[participant,:,chan,:,:,:].quantile(high_q_clim)
 
     fig, axs = plt.subplots(ncols = len(sessions), figsize = figsize, constrained_layout = True)
     fig.suptitle(f'ERP-like time-frequency power map in {participant} in electrode {chan} ({center})', fontsize = sup_fontsize, y = sup_pos) 
@@ -201,12 +204,12 @@ def compute_all():
     chan_keys = power_params['chans']
     centers = ['inspi_time','expi_time']
 
-    # global_erp_keys = [(chan, center) for chan in chan_keys for center in centers]
+    global_erp_keys = [(chan, center) for chan in chan_keys for center in centers]
 
-    # jobtools.compute_job_list(global_erp_fig_job, global_erp_keys, force_recompute=True, engine='slurm',
-    #                           slurm_params={'cpus-per-task':'20', 'mem':'30G', },
-    #                           module_name='stats_erp',
-    #                           )
+    jobtools.compute_job_list(global_erp_fig_job, global_erp_keys, force_recompute=True, engine='slurm',
+                              slurm_params={'cpus-per-task':'20', 'mem':'30G', },
+                              module_name='stats_erp',
+                              )
 
     subject_erp_keys = [(sub_key, chan_key, center) for center in centers for chan_key in chan_keys for sub_key in subject_keys]
     

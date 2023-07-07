@@ -323,17 +323,18 @@ phase_freq_fig_params = {
     'segment_ratios':phase_freq_params['segment_ratios'],
     'baseline_mode':phase_freq_concat_params['baseline_mode'],
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
-    'delta_colorlim':0.05,
+    'delta_colorlim':0.01,
     'compress_subject':'Mean', # Mean or Median or q75
     'max_freq':phase_freq_concat_params['max_freq'],
-    'cmap':'viridis'
+    'cmap':'viridis',
+    'quantile_by_subject_fig':0.75
 }
 
 erp_time_freq_params = {
     'baseline_params':baseline_params,
     'power_params':power_params,
     'half_window_duration':5,
-    'compress_cycle_modes':[0.10,0.20,0.25,0.30,0.40,0.50,0.60,0.70,0.75,0.80,0.90,10] # 10 = 'mean'
+    'compress_cycle_mode':0.75
 }
 
 erp_time_freq_concat_params = {
@@ -350,6 +351,18 @@ erp_fig_params = {
     'delta_colorlim':0.01,
     'max_freq':erp_time_freq_concat_params['max_freq'],
     'cmap':'viridis'
+}
+
+time_phase_fig_params = {
+    'phase_freq_concat_params':phase_freq_concat_params,
+    'erp_time_freq_concat_params':erp_time_freq_concat_params,
+    'chans':power_params['chans'],
+    'segment_ratios':phase_freq_params['segment_ratios'],
+    'baseline_mode':phase_freq_concat_params['baseline_mode'],
+    'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
+    'delta_colorlim':0.01,
+    'max_freq':phase_freq_concat_params['max_freq'],
+    'cmap':'viridis',
 }
 
 eda_params = {
