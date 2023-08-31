@@ -258,10 +258,18 @@ psd_params = {
     'lowest_freq':0.1,
 }
 
+psd_bandpower_params = {
+    'interp_artifact_params':interp_artifact_params,
+    'lowest_freq':1,
+}
+
+psd_baselined_params = {
+'psd_bandpower_params':psd_bandpower_params}
+
 bandpower_params = {
-    'psd_params':psd_params,
+    'psd_baselined_params':psd_baselined_params,
     'fbands':fbands,
-    'total_band':[psd_params['lowest_freq'] , 200] # keep clean freq band (> 200 Hz = noisy)
+    'total_band':[psd_bandpower_params['lowest_freq'] , 200], # keep clean freq band (> 200 Hz = noisy)
 }
 
 power_at_resp_params = {
@@ -447,7 +455,7 @@ rsa_concat_params = {'run_keys':run_keys,
                     'rsa_params':rsa_params,
                     }
 
-bandpower_concat_params = {'run_keys':run_keys,
+bandpower_concat_params = {'run_keys':stim_keys,
                            'bandpower_params':bandpower_params
                           }
 

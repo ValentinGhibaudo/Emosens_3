@@ -14,7 +14,7 @@ from compute_coherence import coherence_at_resp_job
 from compute_eda import eda_job
 from compute_power_at_resp import power_at_resp_job
 from compute_rri import ecg_peak_job
-from compute_psycho import relaxation_job, maia_job, stai_longform_job
+from compute_psycho import relaxation_job, maia_job, stai_longform_job, oas_job, bmrq_job
 from compute_resp_features import respiration_features_job
 from compute_rsa import rsa_features_job
 from compute_cycle_signal import modulation_cycle_signal_job
@@ -31,10 +31,11 @@ from compute_cycle_signal import modulation_cycle_signal_job
 #         mapper_keep_chans[chan] = keep_code
 #     return mapper_keep_chans
 
-# def get_gender_mapper():
-#     metadata = get_metadata().reset_index()
-#     mapper_gender = {row['participant'] : row['gender'] for i, row in metadata.iterrows()}
-#     return mapper_gender
+def get_gender_mapper():
+    file = base_folder / 'Data' / 'metadata.xlsx'
+    metadata = pd.read_excel(file)
+    mapper_gender = {row['participant'] : row['gender'] for i, row in metadata.iterrows()}
+    return mapper_gender
 
 def get_stai_long_mapper(sub_key):
     run_key = f'{sub_key}_ses02'
@@ -53,6 +54,15 @@ def is_session_clean_of_artifact(run_key):
     artifacted = encoder_artifacts.loc[ses,'remove']
     return 1 if artifacted == 0 else 0
     
+def get_oas_mapper():
+    oas = oas_concat_job.get(global_key).to_dataframe()
+    mapper_oas = {row['participant'] : row['OAS'] for i, row in oas.iterrows()} 
+    return mapper_oas
+
+def get_bmrq_mapper():
+    bmrq = bmrq_concat_job.get(global_key).to_dataframe()
+    mapper_bmrq = {row['participant'] : row['BMRQ'] for i, row in bmrq.iterrows()} 
+    return mapper_bmrq
 
 #### JOBS
 
@@ -85,7 +95,7 @@ def maia_concat(global_key, **p):
     df_return = pd.concat(concat).reset_index(drop = True)
     outcomes = list(p['maia_params']['items'].keys())
     df_return['Maia_Mean'] = df_return.loc[:,outcomes].mean(axis = 1)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     return xr.Dataset(df_return)
 
 def test_maia_concat():
@@ -140,8 +150,10 @@ def eda_concat(global_key, **p):
         df_run_key['stai_trait'] = trait
         concat.append(df_run_key)
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))
 
 def test_eda_concat():
@@ -174,8 +186,10 @@ def hrv_concat(global_key, **p):
         concat.append(df_run_key)
 
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))
         
 def test_hrv_concat():
@@ -199,8 +213,10 @@ def rsa_concat(global_key, **p):
         df_run_key['stai_trait'] = trait
         concat.append(df_run_key)
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))    
         
 def test_rsa_concat():
@@ -225,8 +241,10 @@ def bandpower_concat(global_key, **p):
         df_run_key['keep_session'] = keep
         concat.append(df_run_key)
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))
 
 def test_bandpower_concat():
@@ -251,8 +269,10 @@ def coherence_at_resp_concat(global_key, **p):
         df_run_key['keep_session'] = keep
         concat.append(df_run_key)
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))
 
 def test_coherence_at_resp_concat():
@@ -278,8 +298,10 @@ def power_at_resp_concat(global_key, **p):
         df_run_key['keep_session'] = keep
         concat.append(df_run_key)
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))
 
 def test_power_at_resp_concat():
@@ -301,8 +323,10 @@ def resp_features_concat(global_key, **p):
         df_run_key['stai_trait'] = trait
         concat.append(df_run_key)
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))
 
 def test_resp_features_concat():
@@ -323,8 +347,10 @@ def relaxation_concat(global_key, **p):
         df_run_key['stai_trait'] = trait
         concat.append(df_run_key)
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))
 
 def test_relaxation_concat():
@@ -349,8 +375,10 @@ def modulation_cycle_signal_concat(global_key, **p):
         df_run_key['keep_session'] = keep
         concat.append(df_run_key)
     df_return = pd.concat(concat)
-    # df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    df_return['OAS'] = df_return['participant'].map(get_oas_mapper())
+    df_return['BMRQ'] = df_return['participant'].map(get_bmrq_mapper())
     return xr.Dataset(df_return.reset_index(drop = True))
 
 def test_modulation_cycle_signal_concat():
@@ -360,11 +388,56 @@ def test_modulation_cycle_signal_concat():
 modulation_cycle_signal_concat_job = jobtools.Job(precomputedir, 'modulation_cycle_signal_concat', modulation_cycle_signal_concat_params, modulation_cycle_signal_concat)
 jobtools.register_job(modulation_cycle_signal_concat_job)
 
+# OAS
+def oas_concat(global_key, **p):
+    concat = []
+    for run_key in p['run_keys']:
+        df_run_key = oas_job.get(run_key).to_dataframe()
+        state, trait = get_stai_long_mapper(run_key)
+        df_run_key['stai_state'] = state
+        df_run_key['stai_trait'] = trait
+        concat.append(df_run_key)
+    df_return = pd.concat(concat)
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    return xr.Dataset(df_return.reset_index(drop = True))
+
+def test_oas_concat():
+    ds = oas_concat(global_key, **oas_concat_params)
+    print(ds.to_dataframe())
+
+oas_concat_job = jobtools.Job(precomputedir, 'oas_concat', oas_concat_params, oas_concat)
+jobtools.register_job(oas_concat_job)
+
+
+# BMRQ
+def bmrq_concat(global_key, **p):
+    concat = []
+    for run_key in p['run_keys']:
+        df_run_key = bmrq_job.get(run_key).to_dataframe()
+        state, trait = get_stai_long_mapper(run_key)
+        df_run_key['stai_state'] = state
+        df_run_key['stai_trait'] = trait
+        concat.append(df_run_key)
+    df_return = pd.concat(concat)
+    df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
+    df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
+    return xr.Dataset(df_return.reset_index(drop = True))
+
+def test_bmrq_concat():
+    ds = bmrq_concat(global_key, **bmrq_concat_params)
+    print(ds.to_dataframe())
+
+bmrq_concat_job = jobtools.Job(precomputedir, 'bmrq_concat', bmrq_concat_params, bmrq_concat)
+jobtools.register_job(bmrq_concat_job)
+
+
+
 
 def compute_and_save_all():
     jobs = ['maia','bandpower','coherence_at_resp',
             'eda','hrv','power_at_resp','relaxation',
-            'resp_features','rsa','cycle_signal_modulation']
+            'resp_features','rsa','cycle_signal_modulation','oas','bmrq']
 
     for job in jobs:
         file = base_folder / 'Tables' / f'{job}.xlsx'
@@ -390,6 +463,10 @@ def compute_and_save_all():
             rsa_concat_job.get(global_key).to_dataframe().to_excel(file)
         elif job == 'cycle_signal_modulation':
             modulation_cycle_signal_concat_job.get(global_key).to_dataframe().to_excel(file)
+        elif job == 'oas':
+            oas_concat_job.get(global_key).to_dataframe().to_excel(file)
+        elif job == 'bmrq':
+            bmrq_concat_job.get(global_key).to_dataframe().to_excel(file)
     
 if __name__ == '__main__':
 
@@ -404,7 +481,8 @@ if __name__ == '__main__':
     # test_resp_features_concat()
     # test_relaxation_concat()
     # test_modulation_cycle_signal_concat()
-
+    # test_oas_concat()
+    # test_bmrq_concat()
     compute_and_save_all()
     
     

@@ -258,10 +258,18 @@ psd_params = {
     'lowest_freq':0.1,
 }
 
+psd_bandpower_params = {
+    'interp_artifact_params':interp_artifact_params,
+    'lowest_freq':1,
+}
+
+psd_baselined_params = {
+'psd_bandpower_params':psd_bandpower_params}
+
 bandpower_params = {
-    'psd_params':psd_params,
+    'psd_baselined_params':psd_baselined_params,
     'fbands':fbands,
-    'total_band':[psd_params['lowest_freq'] , 200] # keep clean freq band (> 200 Hz = noisy)
+    'total_band':[psd_bandpower_params['lowest_freq'] , 200], # keep clean freq band (> 200 Hz = noisy)
 }
 
 power_at_resp_params = {
@@ -285,10 +293,10 @@ coherence_at_resp_params = {
     'coherence_params': coherence_params,
 }
 
-time_freq_params = {
+power_params = {
     'interp_artifact_params':interp_artifact_params,
-    'chans':['F3','F4','C3','C4','T7','T8','P7','P8','O1','O2'],
-    'decimate_factor':2,
+    'chans':['F3','F4','C3','C4','T7','T8','P7','P8','O1','O2','Fz','Pz','Oz'],
+    'decimate_factor':10,
     'n_freqs':150,
     'f_start':4,
     'f_stop':150,
@@ -297,24 +305,72 @@ time_freq_params = {
     'amplitude_exponent':2
 }
 
+baseline_params = {'power_params':power_params}
+
+
 phase_freq_params = {
+    'power_params':power_params,
     'respiration_features_params':respiration_features_params,
-    'time_freq_params':time_freq_params,
+    'baseline_params':baseline_params,
     'n_phase_bins':200,
     'segment_ratios':0.4,
+    'compress_cycle_modes':[0.1,0.2,0.25,0.3,0.4,0.5,0.6,0.7,0.75,0.8,0.9,10] # 10 = 'mean'
+}
+
+phase_freq_concat_params = {
+    'run_keys':[f'{sub}_{ses}' for ses in ['odor','music'] for sub in subject_keys],
+    'phase_freq_params':phase_freq_params,
+    'baseline_mode':'rz_score',
+    'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
+    'max_freq':20
 }
 
 phase_freq_fig_params = {
-    'phase_freq_params':phase_freq_params,
+    'phase_freq_concat_params':phase_freq_concat_params,
+    'chans':power_params['chans'],
+    'segment_ratios':phase_freq_params['segment_ratios'],
+    'baseline_mode':phase_freq_concat_params['baseline_mode'],
+    'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
+    'delta_colorlim':0.01,
+    'compress_subject':'Mean', # Mean or Median or q75
+    'max_freq':phase_freq_concat_params['max_freq'],
+    'cmap':'viridis',
+    'quantile_by_subject_fig':0.75
+}
+
+erp_time_freq_params = {
+    'baseline_params':baseline_params,
+    'power_params':power_params,
+    'half_window_duration':5,
+    'compress_cycle_mode':0.75
+}
+
+erp_time_freq_concat_params = {
+    'run_keys':[f'{sub}_{ses}' for ses in ['music','odor'] for sub in subject_keys],
+    'erp_time_freq_params':erp_time_freq_params,
     'baseline_mode':'rz_score',
-    # 'compress_cycle_mode':'med_cycle',
-    # 'baseline_mode':'z_score',
-    # 'compress_cycle_mode':'mean_cycle',
-    'compress_cycle_mode':'q75_cycle',
-    'stim_sessions':['music','odor'],
-    'delta_colorlim':0.,
-    'nwin_smooth':5,
     'max_freq':20
+}
+
+erp_fig_params = {
+    'erp_time_freq_concat_params':erp_time_freq_concat_params,
+    'chans':power_params['chans'],
+    'baseline_mode':erp_time_freq_concat_params['baseline_mode'],
+    'delta_colorlim':0.01,
+    'max_freq':erp_time_freq_concat_params['max_freq'],
+    'cmap':'viridis'
+}
+
+time_phase_fig_params = {
+    'phase_freq_concat_params':phase_freq_concat_params,
+    'erp_time_freq_concat_params':erp_time_freq_concat_params,
+    'chans':power_params['chans'],
+    'segment_ratios':phase_freq_params['segment_ratios'],
+    'baseline_mode':phase_freq_concat_params['baseline_mode'],
+    'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
+    'delta_colorlim':0.01,
+    'max_freq':phase_freq_concat_params['max_freq'],
+    'cmap':'viridis',
 }
 
 eda_params = {
@@ -354,6 +410,9 @@ maia_params = {
 relaxation_params = {}
 
 emotions_params = {}
+
+oas_params = {}
+bmrq_params = {}
 
 cycle_signal_params = {
     'interp_artifact_params':interp_artifact_params,
@@ -396,7 +455,7 @@ rsa_concat_params = {'run_keys':run_keys,
                     'rsa_params':rsa_params,
                     }
 
-bandpower_concat_params = {'run_keys':run_keys,
+bandpower_concat_params = {'run_keys':stim_keys,
                            'bandpower_params':bandpower_params
                           }
 
@@ -430,4 +489,13 @@ maia_concat_params = {'subject_keys':subject_keys,
 
 modulation_cycle_signal_concat_params = {'run_keys':run_keys,
                            'cycle_signal_modulation_params':cycle_signal_modulation_params
+                          }
+
+
+oas_concat_params = {'run_keys':subject_keys,
+                           'oas_params':oas_params
+                          }
+
+bmrq_concat_params = {'run_keys':subject_keys,
+                           'bmrq_params':bmrq_params
                           }

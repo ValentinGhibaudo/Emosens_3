@@ -1,7 +1,7 @@
 import xarray as xr
 import pandas as pd
 import numpy as np
-
+from scipy import stats
 from configuration import base_folder, data_path
 from params import *
 
@@ -284,6 +284,20 @@ def get_raw_mne(run_key, participants_label, preload=False):
     raw = mne.io.read_raw_brainvision(file, preload = preload, verbose = 'CRITICAL')
     return raw
 
+def permutation_test_homemade(x,y, design = 'within', n_resamples=999, diff = 'mean'):
+    def statistic(x, y):
+        if diff == 'mean':
+            return np.mean(x) - np.mean(y)
+        elif diff == 'median':
+            return np.median(x) - np.median(y)
+        
+    if design == 'within':
+        permutation_type = 'samples'
+    elif design == 'between':
+        permutation_type = 'independent'
+    res = stats.permutation_test(data=[x,y], statistic=statistic, permutation_type=permutation_type, n_resamples=n_resamples, batch=None, alternative='two-sided', axis=0, random_state=None)
+    return res.pvalue
+
 def get_pval(df, predictor, outcome, subject=None, design='within', verbose = False):
     import ghibtools as gh
     parametricity = gh.parametric(df, predictor, outcome, subject)
@@ -296,15 +310,31 @@ def get_pval(df, predictor, outcome, subject=None, design='within', verbose = Fa
     results = gh.pg_compute_pre(df, predictor, outcome, pre_test, subject)
     return results['p']
 
-def get_df_mask_chan_signif(df, chans, predictor, outcome, subject, design = 'within'):
+def get_df_mask_chan_signif(df, chans, predictor, outcome, subject, design = 'within', multicomp_method = 'bonf', stats_type = 'permutations', diff = 'mean'):
+    
+    def statistic(x, y):
+        if diff == 'mean':
+            return np.mean(x) - np.mean(y)
+        elif diff == 'median':
+            return np.median(x) - np.median(y)
+    
     import pingouin as pg
     rows = []
     for chan in chans:
-        p = get_pval(df = df[df['chan'] == chan], predictor = 'session', outcome = outcome, subject = subject,verbose = False, design= design)
+        if stats_type == 'classic':
+            p = get_pval(df = df[df['chan'] == chan], predictor = 'session', outcome = outcome, subject = subject,verbose = False, design= design)
+        elif stats_type == 'permutations':
+            levels = df[predictor].unique()
+            x_df = df[(df[predictor] == levels[0]) & (df['chan'] == chan)]
+            y_df = df[(df[predictor] == levels[1]) & (df['chan'] == chan)]
+            x = x_df[outcome].values
+            y = y_df[outcome].values
+            res = stats.permutation_test(data=[x,y], statistic=statistic, permutation_type='samples' if design == 'within' else 'independent', n_resamples=1000)
+            p = res.pvalue 
         signif = True if p > 0.05 else False
         rows.append([chan, p, signif])
     chan_signif = pd.DataFrame(rows, columns = ['chan','p','mask'])
-    mask_corr, p_corr = pg.multicomp(chan_signif['p'])
+    mask_corr, p_corr = pg.multicomp(chan_signif['p'], method = multicomp_method)
     chan_signif['p_corr'] = p_corr
     chan_signif['mask_corr'] = mask_corr
     chan_signif = chan_signif.set_index('chan').reindex(eeg_chans)
