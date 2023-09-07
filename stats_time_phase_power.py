@@ -11,6 +11,7 @@ from configuration import *
 import os
 import ghibtools as gh
 import jobtools
+import mne
 
 def get_N_resp_cycles():
     all_resp = resp_features_concat_job.get(global_key).to_dataframe()
@@ -62,6 +63,14 @@ def global_time_phase_fig(chan, **p):
     figsize = (15,10)
 
     cmap = p['cmap']
+    
+    x1_phase = all_phase.loc[:,'odor',q,chan,:,:].values
+    x2_phase = all_phase.loc[:,'music',q,chan,:,:].values
+    t_obs, clusters_phase, cluster_pv_phase,H0 = mne.stats.permutation_cluster_1samp_test(x1_phase - x2_phase, out_type = 'mask', tail =0, verbose = False)
+    
+    x1_time = all_time.loc[:,'odor',chan,'expi_time',:,:].values
+    x2_time = all_time.loc[:,'music',chan,'expi_time',:,:].values
+    t_obs, clusters_time, cluster_pv_time,H0 = mne.stats.permutation_cluster_1samp_test(x1_time - x2_time, out_type = 'mask', tail =0, verbose = False)
 
     vmin_phase = global_phase.loc[:,q,:,:,:].quantile(low_q_clim)
     vmax_phase = global_phase.loc[:,q,:,:,:].quantile(high_q_clim)
@@ -87,6 +96,16 @@ def global_time_phase_fig(chan, **p):
                             vmin = vmin,
                             vmax = vmax
                             )
+        
+        for cluster, pval in zip(clusters_phase,cluster_pv_phase):
+            if pval < p['cluster_based_pval']:
+                ax.contour(global_phase.coords['phase'].values,
+                           global_phase.coords['freq'].values,
+                           cluster, 
+                           levels = 0, 
+                           colors = 'k', 
+                           corner_mask = True)   
+                
         ax.set_yscale('log')
         ax.set_yticks(ticks = yticks, labels = yticks)
         ax.minorticks_off()
@@ -105,6 +124,15 @@ def global_time_phase_fig(chan, **p):
                             vmin = vmin,
                             vmax = vmax
                             )
+        for cluster, pval in zip(clusters_time,cluster_pv_time):
+            if pval < p['cluster_based_pval']:
+                ax.contour(global_time.coords['time'].values,
+                           global_time.coords['freq'].values,
+                           cluster, 
+                           levels = 0, 
+                           colors = 'k', 
+                           corner_mask = True)   
+
         ax.set_yscale('log')
         ax.set_yticks(ticks = yticks, labels = yticks)
         ax.minorticks_off()
@@ -253,14 +281,16 @@ def compute_all():
                               slurm_params={'cpus-per-task':'10', 'mem':'30G', },
                               module_name='stats_time_phase_power',
                               )
+    
+    # jobtools.compute_job_list(global_time_phase_fig_job, global_time_phase_figs_keys, force_recompute=True, engine='loop')
 
 
-    subject_time_phase_fig_keys = [(sub_key, chan_key) for chan_key in chan_keys for sub_key in subject_keys]
+#     subject_time_phase_fig_keys = [(sub_key, chan_key) for chan_key in chan_keys for sub_key in subject_keys]
 
-    jobtools.compute_job_list(subject_time_phase_fig_job, subject_time_phase_fig_keys, force_recompute=True, engine='slurm',
-                              slurm_params={'cpus-per-task':'10', 'mem':'30G', },
-                              module_name='stats_time_phase_power',
-                              )
+#     jobtools.compute_job_list(subject_time_phase_fig_job, subject_time_phase_fig_keys, force_recompute=True, engine='slurm',
+#                               slurm_params={'cpus-per-task':'10', 'mem':'30G', },
+#                               module_name='stats_time_phase_power',
+#                               )
 
 if __name__ == '__main__':
     # test_global_time_phase_fig()

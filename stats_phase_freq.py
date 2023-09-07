@@ -10,6 +10,7 @@ from configuration import *
 import os
 import ghibtools as gh
 import jobtools
+import mne
 
 def get_N_resp_cycles(run_keys):
     concat = []
@@ -32,6 +33,8 @@ def global_phase_freq_fig(chan, cycle_compress_mode, **p):
     cycle_compress_mode = float(cycle_compress_mode)
 
     all_phase_freq = phase_freq_concat_job.get(global_key)['phase_freq_concat']
+    
+
 
     sessions = all_phase_freq['session'].values
 
@@ -60,7 +63,10 @@ def global_phase_freq_fig(chan, cycle_compress_mode, **p):
     figsize = (15,7)
 
     cmap = p['cmap']
-
+    
+    x1 = all_phase_freq.loc[:,'odor',cycle_compress_mode,chan,:,:].values
+    x2 = all_phase_freq.loc[:,'music',cycle_compress_mode,chan,:,:].values
+    t_obs, clusters, cluster_pv,H0 = mne.stats.permutation_cluster_1samp_test(x1 - x2, out_type = 'mask', tail =0, verbose = False)
 
     if p['compress_subject'] == 'Mean':
         global_phase_freq = all_phase_freq.mean('participant')
@@ -88,17 +94,26 @@ def global_phase_freq_fig(chan, cycle_compress_mode, **p):
                             vmin = vmin,
                             vmax = vmax
                             )
+        
+        for cluster, pval in zip(clusters,cluster_pv):
+            if pval < p['cluster_based_pval']:
+                ax.contour(global_phase_freq.coords['phase'].values,
+                           global_phase_freq.coords['freq'].values,
+                           cluster, 
+                           levels = 0, 
+                           colors = 'k', 
+                           corner_mask = True)   
 
         ax.set_yscale('log')
         ax.set_yticks(ticks = yticks, labels = yticks)
         ax.minorticks_off()
 
-        ax.set_xlabel('Phase')
-        ax.set_ylabel('Freq [Hz]')
+        ax.set_xlabel('Phase', fontsize = 15)
+        ax.set_ylabel('Freq [Hz]', fontsize = 15)
 
         ax.axvline(x = x_axvline, color = 'r')
         N = N_cycles_pooled.loc[ses, 'N']
-        ax.set_title(f'{ses} - N : {N}')
+        ax.set_title(f'{ses} - N : {N}', fontsize = 15)
 
 
     cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
@@ -113,7 +128,7 @@ def global_phase_freq_fig(chan, cycle_compress_mode, **p):
     return xr.Dataset()
 
 def test_global_fig_phase_freq():
-    chan, cycle_compress_mode = ('P7','0.1')
+    chan, cycle_compress_mode = ('F3','0.75')
     ds = global_phase_freq_fig(chan,cycle_compress_mode, **phase_freq_fig_params)
     print(ds)
 
@@ -230,12 +245,12 @@ def compute_all():
 
 
 
-    subject_phase_freq_fig_keys = [(sub_key, chan_key) for chan_key in chan_keys for sub_key in subject_keys]
+#     subject_phase_freq_fig_keys = [(sub_key, chan_key) for chan_key in chan_keys for sub_key in subject_keys]
 
-    jobtools.compute_job_list(subject_phase_freq_fig_job, subject_phase_freq_fig_keys, force_recompute=True, engine='slurm',
-                              slurm_params={'cpus-per-task':'10', 'mem':'30G', },
-                              module_name='stats_phase_freq',
-                              )
+#     jobtools.compute_job_list(subject_phase_freq_fig_job, subject_phase_freq_fig_keys, force_recompute=True, engine='slurm',
+#                               slurm_params={'cpus-per-task':'10', 'mem':'30G', },
+#                               module_name='stats_phase_freq',
+#                               )
 
 if __name__ == '__main__':
     # test_global_fig_phase_freq()

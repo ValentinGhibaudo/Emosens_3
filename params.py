@@ -335,7 +335,8 @@ phase_freq_fig_params = {
     'compress_subject':'Mean', # Mean or Median or q75
     'max_freq':phase_freq_concat_params['max_freq'],
     'cmap':'viridis',
-    'quantile_by_subject_fig':0.75
+    'quantile_by_subject_fig':0.75,
+    'cluster_based_pval':0.05
 }
 
 erp_time_freq_params = {
@@ -349,7 +350,7 @@ erp_time_freq_concat_params = {
     'run_keys':[f'{sub}_{ses}' for ses in ['music','odor'] for sub in subject_keys],
     'erp_time_freq_params':erp_time_freq_params,
     'baseline_mode':'rz_score',
-    'max_freq':20
+    'max_freq':phase_freq_concat_params['max_freq']
 }
 
 erp_fig_params = {
@@ -371,6 +372,7 @@ time_phase_fig_params = {
     'delta_colorlim':0.01,
     'max_freq':phase_freq_concat_params['max_freq'],
     'cmap':'viridis',
+    'cluster_based_pval':0.05
 }
 
 eda_params = {

@@ -339,3 +339,27 @@ def get_df_mask_chan_signif(df, chans, predictor, outcome, subject, design = 'wi
     chan_signif['mask_corr'] = mask_corr
     chan_signif = chan_signif.set_index('chan').reindex(eeg_chans)
     return chan_signif
+
+def cluster_stats(x1,x2, chans, verbose = False):
+    import mne
+    
+    X = x2 - x1
+    t_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X, out_type = 'indices', verbose = False)
+    
+    if verbose:
+        print(clusters, cluster_p_values)
+
+    mask_signif_chans = np.full(len(chans), False)
+    mask_non_signif_chans = np.full(len(chans), False)
+
+    chan_inds_signif = []
+    chan_inds_non_signif = []
+    for cluster, p  in zip(clusters, cluster_p_values):
+        if p < 0.05:
+            chan_inds_signif.extend(list(cluster[0]))
+        else:
+            chan_inds_non_signif.extend(list(cluster[0]))
+    mask_signif_chans[chan_inds_signif] = True
+    mask_non_signif_chans[chan_inds_non_signif] = True
+    return mask_signif_chans
+    # return  mask_signif_chans, mask_non_signif_chans
