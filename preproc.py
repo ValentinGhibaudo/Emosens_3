@@ -123,6 +123,10 @@ def compute_preproc(run_key, **p):
 
     raw = get_raw_mne(run_key, participants_label, preload=True)
     raw.crop(tmin = 0, tmax = p['session_duration'], include_tmax = False)
+    
+    if not p['reref'] is None:
+        raw = mne.add_reference_channels(raw, 'Cz',copy = True, verbose = False)
+        raw,_ = mne.set_eeg_reference(inst=raw, ref_channels=p['reref'], copy=True, ch_type = 'eeg', verbose = False)
 
     # NOTCH
     raw_notched = raw.copy()
@@ -145,7 +149,7 @@ def compute_preproc(run_key, **p):
     # CONCAT DATA
     ds = xr.Dataset()
     ds['eeg_clean'] = xr.DataArray(data = data_filtered, dims = ['chan','time'],
-                                   coords = {'chan':p['eeg_chans'], 'time':times}, 
+                                   coords = {'chan':raw_clean_from_eog.ch_names, 'time':times}, 
                                    attrs = {'srate':srate})
 
     return ds

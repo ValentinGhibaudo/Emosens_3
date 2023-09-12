@@ -198,7 +198,8 @@ preproc_params = {
     'lowcut':0.05, # lowcut frequency in Hz
     'highcut':200, # highcut frequency in Hz
     'ftype':'butter',
-    'order':6
+    'order':6,
+    'reref':'average'
 }
 
 artifact_params = {

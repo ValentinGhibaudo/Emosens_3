@@ -20,11 +20,21 @@ run_keys_stai = [f'{sub_key}_{ses_key}' for sub_key in subject_keys for ses_key 
 
 global_key = 'all'
 
+# REREF
+reref = 'average'
 
-# USEFUL LISTS & DICTS
-eeg_chans = ['Fp1', 'Fz', 'F3', 'F7', 'FT9', 'FC5', 'FC1', 'C3', 'T7', 
+if reref == None:
+    eeg_chans = ['Fp1', 'Fz', 'F3', 'F7', 'FT9', 'FC5', 'FC1', 'C3', 'T7', 
              'TP9','CP5','CP1', 'Pz', 'P3', 'P7', 'O1', 'Oz', 'O2', 'P4', 
              'P8', 'TP10', 'CP6','CP2', 'C4', 'T8', 'FT10', 'FC6', 'FC2', 'F4', 'F8', 'Fp2']
+else:
+    eeg_chans = ['Fp1', 'Fz', 'F3', 'F7', 'FT9', 'FC5', 'FC1', 'C3', 'T7', 
+             'TP9','CP5','CP1', 'Pz', 'P3', 'P7', 'O1', 'Oz', 'O2', 'P4', 
+             'P8', 'TP10', 'CP6','CP2', 'C4', 'T8', 'FT10', 'FC6', 'FC2', 'F4', 'F8', 'Fp2','Cz']
+
+
+# USEFUL LISTS & DICTS
+
 
 bio_chans = ['ECG','RespiNasale','RespiVentrale','GSR']
 
@@ -192,13 +202,14 @@ preproc_params = {
     'save_ica_fig': True,
     'random_state' : random_state,
     'ica_excluded_component': ica_excluded_component,
-    'eeg_chans': eeg_chans ,
+    # 'eeg_chans': eeg_chans ,
     'n_components_decomposition' :n_components_decomposition ,
     'session_duration':session_duration,
     'lowcut':0.05, # lowcut frequency in Hz
     'highcut':200, # highcut frequency in Hz
     'ftype':'butter',
-    'order':6
+    'order':6,
+    'reref':reref
 }
 
 artifact_params = {
@@ -318,7 +329,9 @@ phase_freq_params = {
 }
 
 phase_freq_concat_params = {
-    'run_keys':[f'{sub}_{ses}' for ses in ['odor','music'] for sub in subject_keys],
+    'sub_keys':subject_keys,
+    'ses_keys':session_keys,
+    'chans':eeg_chans,
     'phase_freq_params':phase_freq_params,
     'baseline_mode':'rz_score',
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
@@ -327,7 +340,7 @@ phase_freq_concat_params = {
 
 phase_freq_fig_params = {
     'phase_freq_concat_params':phase_freq_concat_params,
-    'chans':power_params['chans'],
+    'chans':eeg_chans,
     'segment_ratios':phase_freq_params['segment_ratios'],
     'baseline_mode':phase_freq_concat_params['baseline_mode'],
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
@@ -347,15 +360,17 @@ erp_time_freq_params = {
 }
 
 erp_time_freq_concat_params = {
-    'run_keys':[f'{sub}_{ses}' for ses in ['music','odor'] for sub in subject_keys],
+    'sub_keys':subject_keys,
+    'ses_keys':session_keys,
     'erp_time_freq_params':erp_time_freq_params,
     'baseline_mode':'rz_score',
+    'center':'expi_time',
     'max_freq':phase_freq_concat_params['max_freq']
 }
 
 erp_fig_params = {
     'erp_time_freq_concat_params':erp_time_freq_concat_params,
-    'chans':power_params['chans'],
+    'chans':eeg_chans,
     'baseline_mode':erp_time_freq_concat_params['baseline_mode'],
     'delta_colorlim':0.01,
     'max_freq':erp_time_freq_concat_params['max_freq'],
@@ -365,7 +380,7 @@ erp_fig_params = {
 time_phase_fig_params = {
     'phase_freq_concat_params':phase_freq_concat_params,
     'erp_time_freq_concat_params':erp_time_freq_concat_params,
-    'chans':power_params['chans'],
+    'chans':eeg_chans,
     'segment_ratios':phase_freq_params['segment_ratios'],
     'baseline_mode':phase_freq_concat_params['baseline_mode'],
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],

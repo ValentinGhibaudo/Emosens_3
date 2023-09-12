@@ -123,6 +123,9 @@ def compute_preproc(run_key, **p):
 
     raw = get_raw_mne(run_key, participants_label, preload=True)
     raw.crop(tmin = 0, tmax = p['session_duration'], include_tmax = False)
+    
+    if not p['reref'] is None:
+        raw,_ = mne.set_eeg_reference(inst=raw, ref_channels=p['reref'], copy=True, verbose = False)
 
     # NOTCH
     raw_notched = raw.copy()
@@ -138,13 +141,13 @@ def compute_preproc(run_key, **p):
     data = raw_clean_from_eog.get_data()
     
     data_detrended = signal.detrend(data, axis = 1)
-    data_filtered = gh.iirfilt(data, srate, lowcut = p['lowcut'], highcut= p['highcut'], order = p['order'] , axis = 1)
+    data_filtered = gh.iirfilt(data_detrended, srate, lowcut = p['lowcut'], highcut= p['highcut'], order = p['order'] , axis = 1)
     
     times = np.arange(data.shape[1]) / srate
 
     # CONCAT DATA
     ds = xr.Dataset()
-    ds['eeg_clean'] = xr.DataArray(data = data, dims = ['chan','time'],
+    ds['eeg_clean'] = xr.DataArray(data = data_filtered, dims = ['chan','time'],
                                    coords = {'chan':p['eeg_chans'], 'time':times}, 
                                    attrs = {'srate':srate})
 
@@ -271,13 +274,13 @@ def test_count_artifact():
     
     
 def compute_all():
-    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
     # jobtools.compute_job_list(ica_figure_job, run_keys, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
-    # jobtools.compute_job_list(artifact_by_chan_job, run_keys, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    jobtools.compute_job_list(artifact_by_chan_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
     jobtools.compute_job_list(eeg_interp_artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
-    # jobtools.compute_job_list(count_artifact_job, subject_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    jobtools.compute_job_list(count_artifact_job, subject_keys, force_recompute=False, engine='joblib', n_jobs = 6)
 
 
 convert_vhdr_job = jobtools.Job(precomputedir, 'convert_vhdr',convert_vhdr_params, convert_vhdr)

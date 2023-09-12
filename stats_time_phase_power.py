@@ -32,16 +32,19 @@ def get_oas_and_bmrq(sub):
 # GLOBAL
 def global_time_phase_fig(chan, **p):
 
+    q = 0.75
+
     N_cycles = get_N_resp_cycles()
     N_cycles_pooled = N_cycles.groupby(['session']).sum(numeric_only = True)
 
-    all_phase = phase_freq_concat_job.get(global_key)['phase_freq_concat']
-    global_phase = all_phase.mean('participant')
+    all_phase = phase_freq_concat_job.get(chan)['phase_freq_concat'] # sub * ses * compress * freq * phase
+    all_phase = all_phase.sel(compress_cycle_mode = q) # sub * ses * freq * phase
+    global_phase = all_phase.mean('participant') # ses * freq * phase
 
-    all_time = erp_concat_job.get(global_key)['erp_concat']
+    all_time = erp_concat_job.get(chan)['erp_concat'] # ses * freq * time
     global_time = all_time.mean('participant')
 
-    sessions = all_phase['session'].values
+    sessions = ['odor','music']
 
     # COLORBAR POS
     ax_x_start, ax_x_width, ax_y_height, ax_y_start = 1.05, 0.02, 1, 0
@@ -57,26 +60,18 @@ def global_time_phase_fig(chan, **p):
     delta_clim= f'{low_q_clim} - {high_q_clim}'
     clim_fontsize = 10
     clim_title = f'Power\n({baseline_mode} vs baseline)\nDelta clim : {delta_clim}'
-    q = 0.75
+    
 
     x_axvline = 0.4
     figsize = (15,10)
 
     cmap = p['cmap']
-    
-    x1_phase = all_phase.loc[:,'odor',q,chan,:,:].values
-    x2_phase = all_phase.loc[:,'music',q,chan,:,:].values
-    t_obs, clusters_phase, cluster_pv_phase,H0 = mne.stats.permutation_cluster_1samp_test(x1_phase - x2_phase, out_type = 'mask', tail =0, verbose = False)
-    
-    x1_time = all_time.loc[:,'odor',chan,'expi_time',:,:].values
-    x2_time = all_time.loc[:,'music',chan,'expi_time',:,:].values
-    t_obs, clusters_time, cluster_pv_time,H0 = mne.stats.permutation_cluster_1samp_test(x1_time - x2_time, out_type = 'mask', tail =0, verbose = False)
 
-    vmin_phase = global_phase.loc[:,q,:,:,:].quantile(low_q_clim)
-    vmax_phase = global_phase.loc[:,q,:,:,:].quantile(high_q_clim)
+    vmin_phase = global_phase.loc[sessions,:,:].quantile(low_q_clim)
+    vmax_phase = global_phase.loc[sessions,:,:].quantile(high_q_clim)
 
-    vmin_time = global_time.loc[:,:,'expi_time',:,:].quantile(low_q_clim)
-    vmax_time = global_time.loc[:,:,'expi_time',:,:].quantile(high_q_clim)
+    vmin_time = global_time.loc[sessions,:,:].quantile(low_q_clim)
+    vmax_time = global_time.loc[sessions,:,:].quantile(high_q_clim)
 
     vmin = vmin_time if vmin_time < vmin_phase else vmin_phase
     vmax = vmax_time if vmax_time > vmax_phase else vmax_phase
@@ -90,13 +85,16 @@ def global_time_phase_fig(chan, **p):
         ax = axs[0,c]
         im_phase = ax.pcolormesh(global_phase.coords['phase'].values, 
                             global_phase.coords['freq'].values,  
-                            global_phase.loc[ses, q, chan , : ,:].values,
+                            global_phase.loc[ses, : ,:].values,
                             cmap = cmap,
                             norm = 'linear',
                             vmin = vmin,
                             vmax = vmax
                             )
         
+        x1_phase = all_phase.loc[:,'baseline',:,:].values
+        x2_phase = all_phase.loc[:,ses,:,:].values
+        t_obs, clusters_phase, cluster_pv_phase,H0 = mne.stats.permutation_cluster_1samp_test(x1_phase - x2_phase, out_type = 'mask', tail =0, verbose = False)
         for cluster, pval in zip(clusters_phase,cluster_pv_phase):
             if pval < p['cluster_based_pval']:
                 ax.contour(global_phase.coords['phase'].values,
@@ -118,12 +116,15 @@ def global_time_phase_fig(chan, **p):
         ax = axs[1,c]
         im_time = ax.pcolormesh(global_time.coords['time'].values, 
                             global_time.coords['freq'].values,  
-                            global_time.loc[ses, chan , 'expi_time', : ,:].values,
+                            global_time.loc[ses , : ,:].values,
                             cmap = cmap,
                             norm = 'linear',
                             vmin = vmin,
                             vmax = vmax
                             )
+        x1_time = all_time.loc[:,'baseline',:,:].values
+        x2_time = all_time.loc[:,ses,:,:].values
+        t_obs, clusters_time, cluster_pv_time,H0 = mne.stats.permutation_cluster_1samp_test(x1_time - x2_time, out_type = 'mask', tail =0, verbose = False)
         for cluster, pval in zip(clusters_time,cluster_pv_time):
             if pval < p['cluster_based_pval']:
                 ax.contour(global_time.coords['time'].values,
@@ -198,10 +199,10 @@ def subject_time_phase_fig(participant, chan, **p):
 
     cmap = p['cmap']
 
-    vmin_phase = all_phase.loc[participant, :, q, chan,:,:].quantile(low_q_clim)
-    vmax_phase = all_phase.loc[participant, :, q, chan,:,:].quantile(high_q_clim)
-    vmin_time = all_time.loc[participant, :, chan , 'expi_time', : ,:].quantile(low_q_clim)
-    vmax_time = all_time.loc[participant, :, chan , 'expi_time', : ,:].quantile(high_q_clim)
+    vmin_phase = all_phase.loc[participant, :, q,:,:].quantile(low_q_clim)
+    vmax_phase = all_phase.loc[participant, :, q,:,:].quantile(high_q_clim)
+    vmin_time = all_time.loc[participant, : , 'expi_time', : ,:].quantile(low_q_clim)
+    vmax_time = all_time.loc[participant, : , 'expi_time', : ,:].quantile(high_q_clim)
 
     vmin = vmin_time if vmin_time < vmin_phase else vmin_phase
     vmax = vmax_time if vmax_time > vmax_phase else vmax_phase
@@ -216,7 +217,7 @@ def subject_time_phase_fig(participant, chan, **p):
 
         im_phase = ax.pcolormesh(all_phase.coords['phase'].values, 
                             all_phase.coords['freq'].values,  
-                            all_phase.loc[participant, ses, q, chan , : ,:].values,
+                            all_phase.loc[participant, ses, q , : ,:].values,
                             cmap = cmap,
                             norm = 'linear',
                             vmin = vmin,
@@ -234,7 +235,7 @@ def subject_time_phase_fig(participant, chan, **p):
         ax = axs[1,c]
         im_time = ax.pcolormesh(all_time.coords['time'].values, 
                             all_time.coords['freq'].values,  
-                            all_time.loc[participant, ses, chan , 'expi_time', : ,:].values,
+                            all_time.loc[participant, ses , 'expi_time', : ,:].values,
                             cmap = cmap,
                             norm = 'linear',
                             vmin = vmin,
@@ -274,11 +275,11 @@ jobtools.register_job(subject_time_phase_fig_job)
 
 # COMPUTE
 def compute_all():
-    chan_keys = power_params['chans']
+    chan_keys = eeg_chans
 
     global_time_phase_figs_keys = [(chan,) for chan in chan_keys]
     jobtools.compute_job_list(global_time_phase_fig_job, global_time_phase_figs_keys, force_recompute=True, engine='slurm',
-                              slurm_params={'cpus-per-task':'10', 'mem':'30G', },
+                              slurm_params={'cpus-per-task':'1', 'mem':'5G', },
                               module_name='stats_time_phase_power',
                               )
     

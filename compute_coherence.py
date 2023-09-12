@@ -95,8 +95,8 @@ def compute_all():
     # jobtools.compute_job_list(coherence_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 3)
     # jobtools.compute_job_list(coherence_job, run_keys, force_recompute=False, engine='loop')
     
-    jobtools.compute_job_list(coherence_at_resp_job, run_keys, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(coherence_at_resp_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 3)
+    # jobtools.compute_job_list(coherence_at_resp_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(coherence_at_resp_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
     
 if __name__ == '__main__':
     # test_compute_coherence()
