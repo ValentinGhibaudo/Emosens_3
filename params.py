@@ -385,9 +385,12 @@ time_phase_fig_params = {
     'baseline_mode':phase_freq_concat_params['baseline_mode'],
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
     'delta_colorlim':0.01,
-    'max_freq':phase_freq_concat_params['max_freq'],
+    'min_freq':6,
+    'max_freq':14,
     'cmap':'viridis',
-    'cluster_based_pval':0.05
+    'cluster_based_pval':0.05,
+    'find_cluster_pval':0.04,
+    'cluster_tail':-1
 }
 
 eda_params = {

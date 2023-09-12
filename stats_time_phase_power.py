@@ -12,6 +12,7 @@ import os
 import ghibtools as gh
 import jobtools
 import mne
+import scipy 
 
 def get_N_resp_cycles():
     all_resp = resp_features_concat_job.get(global_key).to_dataframe()
@@ -37,11 +38,11 @@ def global_time_phase_fig(chan, **p):
     N_cycles = get_N_resp_cycles()
     N_cycles_pooled = N_cycles.groupby(['session']).sum(numeric_only = True)
 
-    all_phase = phase_freq_concat_job.get(chan)['phase_freq_concat'] # sub * ses * compress * freq * phase
+    all_phase = phase_freq_concat_job.get(chan)['phase_freq_concat'].sel(freq=slice(p['min_freq'],p['max_freq'])) # sub * ses * compress * freq * phase
     all_phase = all_phase.sel(compress_cycle_mode = q) # sub * ses * freq * phase
     global_phase = all_phase.mean('participant') # ses * freq * phase
 
-    all_time = erp_concat_job.get(chan)['erp_concat'] # ses * freq * time
+    all_time = erp_concat_job.get(chan)['erp_concat'].sel(freq=slice(p['min_freq'],p['max_freq'])) # ses * freq * time
     global_time = all_time.mean('participant')
 
     sessions = ['odor','music']
@@ -52,7 +53,7 @@ def global_time_phase_fig(chan, **p):
     # FIGS TEXT PRELOAD VARIABLES
     sup_fontsize=20
     sup_pos=1.05
-    yticks = [4,8,12, p['max_freq']]
+    yticks = [p['min_freq'],8,12, p['max_freq']]
 
     baseline_mode = p["baseline_mode"]
     low_q_clim = p['delta_colorlim']
@@ -76,6 +77,13 @@ def global_time_phase_fig(chan, **p):
     vmin = vmin_time if vmin_time < vmin_phase else vmin_phase
     vmax = vmax_time if vmax_time > vmax_phase else vmax_phase
 
+    pval_find_cluster = p['find_cluster_pval']  # arbitrary
+    n_observations = all_phase['participant'].values.size
+    df = n_observations - 1  # degrees of freedom for the test
+    divide_pval = 2 if p['cluster_tail'] == 0 else 1
+    thresh = scipy.stats.t.ppf(1 - pval_find_cluster / divide_pval, df)  # two-tailed, t distribution
+    thresh = thresh * p['cluster_tail'] if p['cluster_tail'] != 0 else thresh
+
     fig, axs = plt.subplots(nrows = 2, ncols = len(sessions), figsize = figsize, constrained_layout = True)
     suptitle = f'Mean power map across {len(subject_keys)} subjects in electrode {chan}'
     fig.suptitle(suptitle, fontsize = sup_fontsize, y = sup_pos) 
@@ -94,7 +102,7 @@ def global_time_phase_fig(chan, **p):
         
         x1_phase = all_phase.loc[:,'baseline',:,:].values
         x2_phase = all_phase.loc[:,ses,:,:].values
-        t_obs, clusters_phase, cluster_pv_phase,H0 = mne.stats.permutation_cluster_1samp_test(x1_phase - x2_phase, out_type = 'mask', tail =0, verbose = False)
+        t_obs, clusters_phase, cluster_pv_phase,H0 = mne.stats.permutation_cluster_1samp_test(x1_phase - x2_phase, out_type = 'mask', threshold = thresh, verbose = False, tail = p['cluster_tail'])
         for cluster, pval in zip(clusters_phase,cluster_pv_phase):
             if pval < p['cluster_based_pval']:
                 ax.contour(global_phase.coords['phase'].values,
@@ -107,8 +115,8 @@ def global_time_phase_fig(chan, **p):
         ax.set_yscale('log')
         ax.set_yticks(ticks = yticks, labels = yticks)
         ax.minorticks_off()
-        ax.set_xlabel('Phase (proportion)')
-        ax.set_ylabel('Freq [Hz]')
+        ax.set_xlabel('Phase (proportion)', fontsize = 15)
+        ax.set_ylabel('Freq [Hz]', fontsize = 15)
         ax.axvline(x = x_axvline, color = 'r')
         N = N_cycles_pooled.loc[ses, 'N']
         ax.set_title(f'Phase map - {ses} - N : {N}')
@@ -124,7 +132,7 @@ def global_time_phase_fig(chan, **p):
                             )
         x1_time = all_time.loc[:,'baseline',:,:].values
         x2_time = all_time.loc[:,ses,:,:].values
-        t_obs, clusters_time, cluster_pv_time,H0 = mne.stats.permutation_cluster_1samp_test(x1_time - x2_time, out_type = 'mask', tail =0, verbose = False)
+        t_obs, clusters_time, cluster_pv_time,H0 = mne.stats.permutation_cluster_1samp_test(x1_time - x2_time, out_type = 'mask', threshold = thresh, verbose = False, tail = p['cluster_tail'])
         for cluster, pval in zip(clusters_time,cluster_pv_time):
             if pval < p['cluster_based_pval']:
                 ax.contour(global_time.coords['time'].values,
@@ -137,8 +145,8 @@ def global_time_phase_fig(chan, **p):
         ax.set_yscale('log')
         ax.set_yticks(ticks = yticks, labels = yticks)
         ax.minorticks_off()
-        ax.set_xlabel('Time [sec]')
-        ax.set_ylabel('Freq [Hz]')
+        ax.set_xlabel('Time [sec]', fontsize = 15)
+        ax.set_ylabel('Freq [Hz]', fontsize = 15)
         ax.axvline(x = 0, color = 'r', ls = '--', lw = 1) 
         N = N_cycles_pooled.loc[ses, 'N']
         ax.set_title(f'Time map - {ses} - N : {N}')
@@ -149,7 +157,7 @@ def global_time_phase_fig(chan, **p):
 
     folder = base_folder / 'Figures' / 'erp_phase' / 'global' 
 
-    fig.savefig(folder / f'{chan}.png', bbox_inches = 'tight', dpi = 100) 
+    fig.savefig(folder / f'{chan}.png', bbox_inches = 'tight', dpi = 300) 
     plt.close()
 
     return xr.Dataset()
@@ -259,7 +267,7 @@ def subject_time_phase_fig(participant, chan, **p):
 
     folder = base_folder / 'Figures' / 'erp_phase' / 'by_subject' / chan
 
-    fig.savefig(folder / f'{participant}.png', bbox_inches = 'tight', dpi = 100) 
+    fig.savefig(folder / f'{participant}.png', bbox_inches = 'tight', dpi = 300) 
     plt.close()
 
     return xr.Dataset()
@@ -279,7 +287,7 @@ def compute_all():
 
     global_time_phase_figs_keys = [(chan,) for chan in chan_keys]
     jobtools.compute_job_list(global_time_phase_fig_job, global_time_phase_figs_keys, force_recompute=True, engine='slurm',
-                              slurm_params={'cpus-per-task':'1', 'mem':'5G', },
+                              slurm_params={'cpus-per-task':'1', 'mem':'1G', },
                               module_name='stats_time_phase_power',
                               )
     
