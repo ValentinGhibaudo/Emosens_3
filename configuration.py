@@ -25,9 +25,8 @@ elif sys.platform.startswith('win'):
     sys.path = [ p1, p2] + sys.path
 
 
-
 base_cmo = Path(base_cmo)
 base_folder = base_cmo / 'Etudiants/NBuonviso2023_Emosens3_OdeurSon_Valentin_Matthias'
-data_path = base_folder / 'Data' 
+data_path = base_cmo / 'multisite' / 'DATA_MANIP' / 'data_NBuonviso2023_OdeurSon_Emosens3_Valentin_Matthias' 
 
 precomputedir = base_folder / 'precompute'

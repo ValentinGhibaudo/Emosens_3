@@ -393,6 +393,22 @@ time_phase_fig_params = {
     'cluster_tail':-1
 }
 
+time_phase_chan_average_params = {
+    'phase_freq_concat_params':phase_freq_concat_params,
+    'erp_time_freq_concat_params':erp_time_freq_concat_params,
+    'chans':eeg_chans,
+    'segment_ratios':phase_freq_params['segment_ratios'],
+    'baseline_mode':phase_freq_concat_params['baseline_mode'],
+    'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
+    'delta_colorlim':0.01,
+    'min_freq':6,
+    'max_freq':14,
+    'cmap':'viridis',
+    'cluster_based_pval':0.05,
+    'find_cluster_pval':0.05,
+    'cluster_tail':0
+}
+
 eda_params = {
     'session_duration':session_duration
 }

@@ -34,7 +34,8 @@ for sub in subject_keys:
             
                 ax =axs[r,c]
                 metric = metrics_array[r,c]
-                ax.plot(gh.sliding_mean(resp[metric], nwin = n_resp_cycles_window), label = ses)
+                # ax.scatter(np.arange(resp[metric].size), gh.sliding_mean(resp[metric], nwin = n_resp_cycles_window), label = ses)
+                ax.plot(gh.sliding_mean(resp[metric], nwin = n_resp_cycles_window)[n_resp_cycles_window:-n_resp_cycles_window], label = ses)
                 ax.set_xlabel('N resp cycle')
                 ax.set_title(metric)
                 ax.legend()

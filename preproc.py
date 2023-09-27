@@ -125,7 +125,7 @@ def compute_preproc(run_key, **p):
     raw.crop(tmin = 0, tmax = p['session_duration'], include_tmax = False)
     
     if not p['reref'] is None:
-        raw = mne.add_reference_channels(raw, 'Cz',copy = True, verbose = False)
+        raw = mne.add_reference_channels(raw, 'Cz',copy = True)
         raw,_ = mne.set_eeg_reference(inst=raw, ref_channels=p['reref'], copy=True, ch_type = 'eeg', verbose = False)
 
     # NOTCH
