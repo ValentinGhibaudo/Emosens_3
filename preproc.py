@@ -308,7 +308,7 @@ jobtools.register_job(count_artifact_job)
 
 
 if __name__ == '__main__':
-    # test_convert_vhdr()
+    test_convert_vhdr()
     # test_compute_ica_figure()
     # test_compute_preproc()
     # test_detect_movement_artifacts()
@@ -316,4 +316,4 @@ if __name__ == '__main__':
     # test_interp_artifact()
     # test_count_artifact()
     
-    compute_all()
+    # compute_all()
