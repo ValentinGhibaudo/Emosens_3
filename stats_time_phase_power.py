@@ -13,6 +13,7 @@ import ghibtools as gh
 import jobtools
 import mne
 import scipy 
+import string
 
 def get_N_resp_cycles():
     all_resp = resp_features_concat_job.get(global_key).to_dataframe()
@@ -59,9 +60,10 @@ def global_time_phase_fig(chan, **p):
     low_q_clim = p['delta_colorlim']
     high_q_clim = 1  - p['delta_colorlim']
     delta_clim= f'{low_q_clim} - {high_q_clim}'
-    clim_fontsize = 10
-    clim_title = f'Power\n({baseline_mode} vs baseline)\nDelta clim : {delta_clim}'
-    
+    clim_fontsize = 15
+    title_fontsize = 17
+    tick_fontsize = 12
+    clim_title = f'Power\n({baseline_mode} vs baseline)\nDelta clim : {delta_clim}'  
 
     x_axvline = 0.4
     figsize = (15,10)
@@ -84,7 +86,12 @@ def global_time_phase_fig(chan, **p):
     thresh = scipy.stats.t.ppf(1 - pval_find_cluster / divide_pval, df)  # two-tailed, t distribution
     thresh = thresh * p['cluster_tail'] if p['cluster_tail'] != 0 else thresh
 
-    fig, axs = plt.subplots(nrows = 2, ncols = len(sessions), figsize = figsize, constrained_layout = True)
+    nrows = 2
+    ncols = len(sessions)
+    letters = list(string.ascii_uppercase)
+    letters_array = np.array(letters[:(nrows+ncols)]).reshape(2,len(sessions))
+
+    fig, axs = plt.subplots(nrows = nrows, ncols = ncols , figsize = figsize, constrained_layout = True)
     suptitle = f'Mean power map across {len(subject_keys)} subjects in electrode {chan}'
     fig.suptitle(suptitle, fontsize = sup_fontsize, y = sup_pos) 
 
@@ -113,13 +120,17 @@ def global_time_phase_fig(chan, **p):
                            corner_mask = True)   
                 
         ax.set_yscale('log')
-        ax.set_yticks(ticks = yticks, labels = yticks)
+        ax.set_yticks(ticks = yticks, labels = yticks, fontsize = tick_fontsize)
+        ax.set_xticklabels(ax.get_xticklabels(), fontsize = tick_fontsize)
         ax.minorticks_off()
         ax.set_xlabel('Phase (proportion)', fontsize = 15)
         ax.set_ylabel('Freq [Hz]', fontsize = 15)
         ax.axvline(x = x_axvline, color = 'r')
         N = N_cycles_pooled.loc[ses, 'N']
-        ax.set_title(f'Phase map - {ses} - N : {N}')
+        ax.set_title(f'Phase map - {ses} - N : {N}', fontsize = title_fontsize)
+        ax2 = ax.twinx()
+        ax2.set_yticks([])
+        ax2.set_title('{})'.format(letters_array[0,c]), loc = 'left', fontsize = 25)
 
         ax = axs[1,c]
         im_time = ax.pcolormesh(global_time.coords['time'].values, 
@@ -143,13 +154,17 @@ def global_time_phase_fig(chan, **p):
                            corner_mask = True)   
 
         ax.set_yscale('log')
-        ax.set_yticks(ticks = yticks, labels = yticks)
+        ax.set_yticks(ticks = yticks, labels = yticks, fontsize = tick_fontsize)
+        ax.set_xticklabels(ax.get_xticklabels(), fontsize = tick_fontsize)
         ax.minorticks_off()
         ax.set_xlabel('Time [sec]', fontsize = 15)
         ax.set_ylabel('Freq [Hz]', fontsize = 15)
         ax.axvline(x = 0, color = 'r', ls = '--', lw = 1) 
         N = N_cycles_pooled.loc[ses, 'N']
-        ax.set_title(f'Time map - {ses} - N : {N}')
+        ax.set_title(f'Time map - {ses} - N : {N}', fontsize = title_fontsize)
+        ax2 = ax.twinx()
+        ax2.set_yticks([])
+        ax2.set_title('{})'.format(letters_array[1,c]), loc = 'left', fontsize = 25)
 
     cbar_ax_phase = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
     clb_phase = fig.colorbar(im_phase, cax=cbar_ax_phase)
@@ -455,8 +470,8 @@ def compute_all():
 if __name__ == '__main__':
     # test_global_time_phase_fig()
     # test_subject_time_phase_fig()
-    test_sub_chan_average_time_phase_fig()
-    # compute_all()
+    # test_sub_chan_average_time_phase_fig()
+    compute_all()
         
         
             

@@ -112,8 +112,8 @@ for chan in p['chans']:
         N = N_cycles_pooled.loc[session, 'N']
         ax.set_title(f'{session} - N : {N}')
 
-    file = fig_folder / 'global' / f'{chan}.tif'
-    fig.savefig(file, bbox_inches = 'tight', dpi = 200)
+    file = fig_folder / 'global' / f'{chan}.png'
+    fig.savefig(file, bbox_inches = 'tight', dpi = 300)
     plt.close()
     
     
@@ -129,40 +129,42 @@ for sub in subject_keys:
     bmrq_sub = bmrq.loc[sub, 'BMRQ'].round(3)
     oas_sub = oas.loc[sub, 'OAS'].round(3)
     
-    for chan in p['chans']:
-        
-        vmin_eeg = all_cycle_signal.sel(participant = sub, chan=chan).min()
-        vmax_eeg = all_cycle_signal.sel(participant = sub, chan=chan).max()
-        
-        fig, axs = plt.subplots(ncols = len(session_keys), figsize = (15,5), constrained_layout = True)
-        fig.suptitle(f'Mean EEG waveform along respiration phase in {sub} at electrode {chan} \n OAS : {oas_sub} - BMRQ : {bmrq_sub}', fontsize = 20, y = 1.05) 
-
-        for c, session in enumerate(session_keys):
-
-            ax = axs[c]
+    vmin_eeg = all_cycle_signal.sel(participant = sub).min()
+    vmax_eeg = all_cycle_signal.sel(participant = sub).max()
+    
+    ncols = len(session_keys)
+    nrows = len(p['chans'])
+                
+    fig, axs = plt.subplots(nrows=nrows, ncols = ncols, figsize = (15,40), constrained_layout = True)
+    fig.suptitle(f'Mean EEG waveform along respiration phase in {sub}\n OAS : {oas_sub} - BMRQ : {bmrq_sub}', fontsize = 20, y = 1.05)    
+                
+    for c, session in enumerate(session_keys):
+        for r, chan in enumerate(p['chans']) :   
+                
+            ax = axs[r,c]
 
             chan_sig = all_cycle_signal.loc[sub, session, chan , :].values
 
-            ax.plot(phase , chan_sig  , lw = 1, color = 'k', label = 'eeg')
+            ax.plot(phase , chan_sig  , lw = 1, color = 'k')
             ax.set_ylim(vmin_eeg, vmax_eeg)
 
             ax2 = ax.twinx()
-            ax2.plot(phase , all_cycle_signal.loc[sub, session, 'heart', :].values  , lw = 1, color = 'r', label = 'heart')
+            ax2.plot(phase , all_cycle_signal.loc[sub, session, 'heart', :].values  , lw = 1, color = 'r')
             ax2.set_ylim(40,120)
 
             ax3 = ax.twinx()
-            ax3.plot(phase , all_cycle_signal.loc[sub, session, 'resp_nose' , :].values , lw = 1, color = None, label = 'resp_nose')
-            ax3.plot(phase , all_cycle_signal.loc[sub, session, 'resp_mouth' , :].values , lw = 1, color = 'darkorange', label = 'resp_mouth')
+            ax3.plot(phase , all_cycle_signal.loc[sub, session, 'resp_nose' , :].values , lw = 1, color = None)
+            ax3.plot(phase , all_cycle_signal.loc[sub, session, 'resp_mouth' , :].values , lw = 1, color = 'darkorange')
             ax3.set_yticks([])
 
             if c == len(session_keys) - 1:
-                ax2.set_ylabel('Heart rate [bpm]') 
+                ax2.set_ylabel('Heart rate [bpm]')
             else:
                 ax2.set_yticks([])
 
-            ax.legend(fontsize = 'x-small', loc = 'upper left')
-            ax2.legend(fontsize = 'x-small', loc = 'upper right')
-            ax3.legend(fontsize = 'x-small', loc = 'lower left')
+#             ax.legend(fontsize = 'x-small', loc = 'upper left')
+#             ax2.legend(fontsize = 'x-small', loc = 'upper right')
+#             ax3.legend(fontsize = 'x-small', loc = 'lower left')
 
             if c == 0:
                 ax.set_ylabel('Amplitude [AU]')
@@ -172,11 +174,10 @@ for sub in subject_keys:
             ax.set_xlabel('Phase')
 
             ax.axvline(x = p['segment_ratios'], color = 'g')
-            N = N_cycles.loc[(participant,session), 'N']
-            ax.set_title(f'{session} - N : {N}')
-
-        folder = fig_folder / 'by_subject' / f'{chan}.tif'
-        if not os.path.exists(folder):
-            os.mkdir(folder)
-        fig.savefig(folder / f'{sub}.png', bbox_inches = 'tight', dpi = 200) 
-        plt.close()
+            
+            if r == 0:
+                N = N_cycles.loc[(participant,session), 'N']
+                ax.set_title(f'{session} - N : {N}')
+                
+    fig.savefig(fig_folder / 'by_subject' / f'{sub}.png', bbox_inches = 'tight', dpi = 300) 
+    plt.close()
