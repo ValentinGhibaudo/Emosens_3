@@ -535,3 +535,13 @@ oas_concat_params = {'run_keys':subject_keys,
 bmrq_concat_params = {'run_keys':subject_keys,
                            'bmrq_params':bmrq_params
                           }
+
+cycle_signal_frames_params = {
+    'cycle_signal_params':cycle_signal_params,
+    'chan_line_signal':'Cz',
+    'resp_chan':'resp_nose'
+}
+
+video_params = {'step':4,
+                'video_duration':10
+               }
