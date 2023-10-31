@@ -15,6 +15,8 @@ import jobtools
 
 def cycle_signal_frames(sub, **p):
     
+    sub_folder = 'Cycle_Signal_Video_2'
+    
     pos = get_pos()
     
     sess = ['baseline','music','odor']
@@ -41,15 +43,19 @@ def cycle_signal_frames(sub, **p):
     resp_vmin = das.loc[:,resp_chan,:].min()
     resp_vmax = das.loc[:,resp_chan,:].max()
     
+    resp_mouth_chan = 'resp_mouth'
+    resp_mouth_vmin = das.loc[:,resp_mouth_chan,:].min()
+    resp_mouth_vmax = das.loc[:,resp_mouth_chan,:].max()
+    
     xvline = int(p['cycle_signal_params']['segment_ratios'] * phases.size)
 
-    folder = base_folder / 'Figures' / 'Cycle_Signal_Video' / sub
+    folder = base_folder / 'Figures' / sub_folder / sub
     if not os.path.exists(folder):
         os.mkdir(folder)
     
     for phase in phases:
-        fig, axs = plt.subplots(nrows = 3, ncols = len(sess), figsize = (20,15))
-        fig.suptitle(f'Participant : {sub}', fontsize = 20)
+        fig, axs = plt.subplots(nrows = 5, ncols = len(sess), figsize = (30,20))
+        fig.suptitle(f'Participant : {sub}', fontsize = 20, y = 1.02)
 
         for c, ses in enumerate(sess):
             ax = axs[0,c]
@@ -72,6 +78,21 @@ def cycle_signal_frames(sub, **p):
             ax.axvline(xvline, color = 'g')
             ax.axis('off')
             ax.set_ylim(resp_vmin, resp_vmax)
+            
+            ax = axs[3,c]
+            mouth_sig = das.loc[ses,resp_mouth_chan,:].values
+            ax.plot(mouth_sig, color = 'm', lw = 2)
+            ax.scatter(phase, mouth_sig[int(phase)], color = 'r', lw=3)
+            ax.axvline(xvline, color = 'g')
+            ax.axis('off')
+            ax.set_ylim(resp_mouth_vmin, resp_mouth_vmax)
+            
+            ax = axs[4,c]
+            heart_sig = das.loc[ses,'heart',:].values
+            ax.plot(heart_sig, color = 'r', lw = 2)
+            ax.scatter(phase, heart_sig[int(phase)], color = 'r', lw=3)
+            ax.axvline(xvline, color = 'g')
+            ax.axis('off')
 
         file =  folder / f'im_{phase}.png'
         fig.savefig(file, bbox_inches = 'tight')
@@ -92,10 +113,12 @@ def make_video_cycle_signal(sub):
     import cv2
     import glob
     
+    sub_folder = 'Cycle_Signal_Video_2'
+    
     step = video_params['step']
     video_duration = video_params['video_duration']
     
-    folder = base_folder / 'Figures' / 'Cycle_Signal_Video' / sub
+    folder = base_folder / 'Figures' / sub_folder / sub
     folder = str(folder)
     
     n_images_generated = len(glob.glob(f'{folder}/im*.png'))
@@ -105,7 +128,7 @@ def make_video_cycle_signal(sub):
     n_images = len(images)
     fps = int(n_images / video_duration)
     
-    folder_video = base_folder / 'Figures' / 'Cycle_Signal_Video' / 'videos'
+    folder_video = base_folder / 'Figures' / sub_folder / 'videos'
     folder_video = str(folder_video)
     video_name = f'{folder_video}/video_{sub}.avi'
     video_name = str(video_name)
@@ -125,10 +148,11 @@ def make_video_cycle_signal(sub):
 def compute_all():
     run_keys = [(sub,) for sub in subject_keys]
     # jobtools.compute_job_list(cycle_signal_frames_job, run_keys, force_recompute=True, engine='loop')
-    jobtools.compute_job_list(cycle_signal_frames_job, run_keys, force_recompute=True, engine='slurm',
-                              slurm_params={'cpus-per-task':'1', 'mem':'1G', },
-                              module_name='video_cycle_signal',
-                              )
+    jobtools.compute_job_list(cycle_signal_frames_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 31)
+    # jobtools.compute_job_list(cycle_signal_frames_job, run_keys, force_recompute=True, engine='slurm',
+    #                           slurm_params={'cpus-per-task':'1', 'mem':'1G', },
+    #                           module_name='video_cycle_signal',
+    #                           )
     
 def make_all_videos():
     for sub in subject_keys:
