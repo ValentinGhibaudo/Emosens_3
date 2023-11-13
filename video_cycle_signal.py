@@ -46,6 +46,8 @@ def cycle_signal_frames(sub, **p):
     resp_mouth_chan = 'resp_mouth'
     resp_mouth_vmin = das.loc[:,resp_mouth_chan,:].min()
     resp_mouth_vmax = das.loc[:,resp_mouth_chan,:].max()
+
+    fontsize_titles = 15
     
     xvline = int(p['cycle_signal_params']['segment_ratios'] * phases.size)
 
@@ -54,20 +56,21 @@ def cycle_signal_frames(sub, **p):
         os.mkdir(folder)
     
     for phase in phases:
-        fig, axs = plt.subplots(nrows = 5, ncols = len(sess), figsize = (30,20))
-        fig.suptitle(f'Participant : {sub}', fontsize = 20, y = 1.02)
+        # fig, axs = plt.subplots(nrows = 5, ncols = len(sess), figsize = (30,20))
+        fig, axs = plt.subplots(nrows = 3, ncols = len(sess), figsize = (15,10))
+        fig.suptitle(f'Participant : {sub}', fontsize = 25, y = 1.02)
 
         for c, ses in enumerate(sess):
             ax = axs[0,c]
             im, cn = mne.viz.plot_topomap(data = eeg[c,:,int(phase)].values , pos = pos, names = eeg_chans, axes = ax, show = False, vlim = (vmin,vmax))
-            ax.set_title(ses)
+            ax.set_title(ses, fontsize = fontsize_titles + 5)
 
             ax = axs[1,c]
             chan_sig = eeg.loc[ses,chan_line,:].values
             ax.plot(chan_sig, color = 'k')
             ax.scatter(phase, chan_sig[int(phase)], color = 'r', lw=3)
             ax.axvline(xvline, color = 'g')
-            ax.set_title(chan_line)
+            ax.set_title(f'EEG signal from {chan_line}', fontsize = fontsize_titles)
             ax.axis('off')
             ax.set_ylim(chan_vmin, chan_vmax)
 
@@ -78,21 +81,22 @@ def cycle_signal_frames(sub, **p):
             ax.axvline(xvline, color = 'g')
             ax.axis('off')
             ax.set_ylim(resp_vmin, resp_vmax)
+            ax.set_title(f'Respiratory signal', fontsize = fontsize_titles)
             
-            ax = axs[3,c]
-            mouth_sig = das.loc[ses,resp_mouth_chan,:].values
-            ax.plot(mouth_sig, color = 'm', lw = 2)
-            ax.scatter(phase, mouth_sig[int(phase)], color = 'r', lw=3)
-            ax.axvline(xvline, color = 'g')
-            ax.axis('off')
-            ax.set_ylim(resp_mouth_vmin, resp_mouth_vmax)
+            # ax = axs[3,c]
+            # mouth_sig = das.loc[ses,resp_mouth_chan,:].values
+            # ax.plot(mouth_sig, color = 'm', lw = 2)
+            # ax.scatter(phase, mouth_sig[int(phase)], color = 'r', lw=3)
+            # ax.axvline(xvline, color = 'g')
+            # ax.axis('off')
+            # ax.set_ylim(resp_mouth_vmin, resp_mouth_vmax)
             
-            ax = axs[4,c]
-            heart_sig = das.loc[ses,'heart',:].values
-            ax.plot(heart_sig, color = 'r', lw = 2)
-            ax.scatter(phase, heart_sig[int(phase)], color = 'r', lw=3)
-            ax.axvline(xvline, color = 'g')
-            ax.axis('off')
+            # ax = axs[4,c]
+            # heart_sig = das.loc[ses,'heart',:].values
+            # ax.plot(heart_sig, color = 'r', lw = 2)
+            # ax.scatter(phase, heart_sig[int(phase)], color = 'r', lw=3)
+            # ax.axvline(xvline, color = 'g')
+            # ax.axis('off')
 
         file =  folder / f'im_{phase}.png'
         fig.savefig(file, bbox_inches = 'tight')
@@ -156,6 +160,7 @@ def compute_all():
     
 def make_all_videos():
     for sub in subject_keys:
+        print(sub)
         make_video_cycle_signal(sub) 
     
 
