@@ -20,6 +20,39 @@ run_keys_stai = [f'{sub_key}_{ses_key}' for sub_key in subject_keys for ses_key 
 
 global_key = 'all'
 
+répondeurs_resp = {'P01': 'non_répondeur', # those who increase cycle freq during music AND decrease cycle freq during odor = 16 répondeurs, 14 non répondeurs
+                     'P02': 'répondeur',
+                     'P03': 'non_répondeur',
+                     'P04': 'répondeur',
+                     'P05': 'répondeur',
+                     'P06': 'répondeur',
+                     'P07': 'répondeur',
+                     'P08': 'répondeur',
+                     'P09': 'non_répondeur',
+                     'P10': 'répondeur',
+                     'P11': 'répondeur',
+                     'P12': 'non_répondeur',
+                     'P13': 'non_répondeur',
+                     'P14': 'répondeur',
+                     'P15': 'non_répondeur',
+                     'P16': 'non_répondeur',
+                     'P17': 'non_répondeur',
+                     'P18': 'répondeur',
+                     'P19': 'non_répondeur',
+                     'P20': 'répondeur',
+                     'P21': 'non_répondeur',
+                     'P23': 'non_répondeur',
+                     'P24': 'non_répondeur',
+                     'P25': 'répondeur',
+                     'P26': 'répondeur',
+                     'P27': 'répondeur',
+                     'P28': 'répondeur',
+                     'P29': 'non_répondeur',
+                     'P30': 'répondeur',
+                     'P31': 'non_répondeur'
+                  }
+
+
 # REREF
 reref = 'average'
 
@@ -557,5 +590,5 @@ cycle_signal_frames_params = {
 }
 
 video_params = {'step':5,
-                'video_duration':15
+                'video_duration':30
                }
