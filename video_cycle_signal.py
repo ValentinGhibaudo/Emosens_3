@@ -40,8 +40,8 @@ def cycle_signal_frames(sub, **p):
     chan_vmax = das.loc[:,chan_line,:].max()
 
     resp_chan = p['resp_chan']
-    resp_vmin = das.loc[:,resp_chan,:].min()
-    resp_vmax = das.loc[:,resp_chan,:].max()
+    resp_vmin = (-das.loc[:,resp_chan,:]).min()
+    resp_vmax = (-das.loc[:,resp_chan,:]).max()
     
     resp_mouth_chan = 'resp_mouth'
     resp_mouth_vmin = das.loc[:,resp_mouth_chan,:].min()
@@ -75,7 +75,7 @@ def cycle_signal_frames(sub, **p):
             ax.set_ylim(chan_vmin, chan_vmax)
 
             ax = axs[2,c]
-            resp_sig = das.loc[ses,resp_chan,:].values
+            resp_sig = -das.loc[ses,resp_chan,:].values
             ax.plot(resp_sig, color = None, lw = 2)
             ax.scatter(phase, resp_sig[int(phase)], color = 'r', lw=3)
             ax.axvline(xvline, color = 'g')
@@ -154,7 +154,7 @@ def cycle_signal_frames_vabsolue(sub, **p):
 
     folder = base_folder / 'Figures' / sub_folder / sub
     if not os.path.exists(folder):
-        os.mkdir(folder)
+        os.mkdir(folder)!
     
     for phase in phases:
         # fig, axs = plt.subplots(nrows = 5, ncols = len(sess), figsize = (30,20))
@@ -289,13 +289,13 @@ def make_video_cycle_signal_vabsolue(sub):
 def compute_all():
     run_keys = [(sub,) for sub in subject_keys]
     # jobtools.compute_job_list(cycle_signal_frames_job, run_keys, force_recompute=True, engine='loop')
-    # jobtools.compute_job_list(cycle_signal_frames_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 31)
+    jobtools.compute_job_list(cycle_signal_frames_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 31)
     # jobtools.compute_job_list(cycle_signal_frames_job, run_keys, force_recompute=True, engine='slurm',
     #                           slurm_params={'cpus-per-task':'1', 'mem':'1G', },
     #                           module_name='video_cycle_signal',
     #                           )
     
-    jobtools.compute_job_list(cycle_signal_frames_vabsolue_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 31)
+    # jobtools.compute_job_list(cycle_signal_frames_vabsolue_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 31)
     
 def make_all_videos():
     for sub in subject_keys:
@@ -314,9 +314,9 @@ if __name__ == '__main__':
     # compute_all()
     
     # make_video_cycle_signal('P02')
-    # make_all_videos()
+    make_all_videos()
     
     # make_video_cycle_signal_vabsolue('P08')
-    make_all_videos_vabsolue()
+    # make_all_videos_vabsolue()
     
         

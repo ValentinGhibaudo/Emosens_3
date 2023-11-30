@@ -176,7 +176,7 @@ def get_viewer_from_run_key(run_key, parent=None):
 
 def test_get_viewer():
     
-    run_key = 'P09_odor'
+    run_key = 'P11_odor'
 
     # ds = respiration_features_job.get(run_key)
     # print(ds)

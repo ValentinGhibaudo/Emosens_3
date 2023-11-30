@@ -3,6 +3,7 @@ from params import *
 import xarray as xr
 import jobtools
 from preproc import convert_vhdr_job
+from compute_resp_features import respiration_features_job
 import matplotlib.pyplot as plt
 
 
@@ -40,7 +41,6 @@ def test_compute_ecg():
 # ECG PEAKS    
 def compute_ecg_peaks(run_key, **p):
     import physio
- 
     raw_dataset = convert_vhdr_job.get(run_key)
     
     ecg_raw = raw_dataset['raw'].sel(chan='ECG', time = slice(0, p['session_duration'])).values[:-1]
@@ -110,16 +110,30 @@ def test_compute_rri_signal():
     
 #     ax.plot(times, rri)
 #     plt.show()
+
+def ecg_peaks_coupling(run_key, **p):
+    sub, ses = run_key.split('_')
+    ecg_peaks = ecg_peak_job.get(run_key).to_dataframe()
+    rsp_features = respiration_features_job.get(run_key).to_dataframe()
     
+    ecg_peak_angles = ecg_peaks.copy()
+    ecg_peak_angles['Participant'] = sub
+    ecg_peak_angles['session'] = ses
+    ecg_peak_angles['Resp_Angle'] = np.nan
+
+    for i, row in rsp_features.iterrows():
+        mask_r_peaks_in_cycle = (ecg_peaks['peak_time'] >= row['inspi_time']) & (ecg_peaks['peak_time'] < row['next_inspi_time'])
+        r_peaks_in_cycle = ecg_peaks[mask_r_peaks_in_cycle]
+        ecg_peak_angles.loc[r_peaks_in_cycle.index, 'Resp_Angle'] = ((r_peaks_in_cycle['peak_time'].values - row['inspi_time']) / row['cycle_duration']) * 2 * np.pi
+
+    return xr.Dataset(ecg_peak_angles)
+
+def test_ecg_peaks_coupling():
+    run_key = 'P05_baseline'
+    ds = ecg_peaks_coupling(run_key, **ecg_params)
+    res = ds.to_dataframe()
+    print(res)
     
-def compute_all():
-    # jobtools.compute_job_list(ecg_job, run_keys, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(ecg_peak_job, run_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(rri_signal_job, run_keys, force_recompute=False, engine='loop')
-
-
-
-
 ecg_job = jobtools.Job(precomputedir, 'ecg', ecg_params, compute_ecg)
 jobtools.register_job(ecg_job)
 
@@ -129,12 +143,21 @@ jobtools.register_job(ecg_peak_job)
 rri_signal_job = jobtools.Job(precomputedir, 'rri_signal', rri_signal_params, compute_rri_signal)
 jobtools.register_job(rri_signal_job)
 
+ecg_peaks_coupling_job = jobtools.Job(precomputedir, 'ecg_peaks_coupling', ecg_params, ecg_peaks_coupling)
+jobtools.register_job(ecg_peaks_coupling_job)
+
+def compute_all():
+    # jobtools.compute_job_list(ecg_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(ecg_peak_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(rri_signal_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(ecg_peaks_coupling_job, run_keys, force_recompute=False, engine='loop')
+
 
 if __name__ == '__main__':
     # test_compute_ecg()
     # test_compute_ecg_peaks()
     # test_compute_rri_signal()
-    
+    # test_ecg_peaks_coupling()
     
     compute_all()
 
