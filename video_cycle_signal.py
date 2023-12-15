@@ -154,7 +154,7 @@ def cycle_signal_frames_vabsolue(sub, **p):
 
     folder = base_folder / 'Figures' / sub_folder / sub
     if not os.path.exists(folder):
-        os.mkdir(folder)!
+        os.mkdir(folder)
     
     for phase in phases:
         # fig, axs = plt.subplots(nrows = 5, ncols = len(sess), figsize = (30,20))

@@ -20,6 +20,63 @@ run_keys_stai = [f'{sub_key}_{ses_key}' for sub_key in subject_keys for ses_key 
 
 global_key = 'all'
 
+music_mapper = {
+        1:'1_Classic',
+          2:'2_Electro',
+          3:'3_Hard_rock',
+          4:'4_Jazz',
+          5:'5_Metal',
+          6:'6_Pop',
+          7:'7_Raga',
+          8:'8_RAP_1',
+        9:'9_RAP_2',
+          10:'10_Variété',
+         }
+
+tempos = {1:55,
+          2:128,
+          3:110,
+          4:122,
+          5:134,
+          6:60,
+          7:56,
+          8:68,
+          9:108,
+          10:81,
+         }
+
+chosen_musics = {'P01': 10,
+ 'P02': 10,
+ 'P03': 10,
+ 'P04': 3,
+ 'P05': 9,
+ 'P06': 4,
+ 'P07': 7,
+ 'P08': 10,
+ 'P09': 9,
+ 'P10': 9,
+ 'P11': 10,
+ 'P12': 10,
+ 'P13': 9,
+ 'P14': 7,
+ 'P15': 8,
+ 'P16': 10,
+ 'P17': 10,
+ 'P18': 8,
+ 'P19': 10,
+ 'P20': 5,
+ 'P21': 10,
+ 'P23': 8,
+ 'P24': 6,
+ 'P25': 5,
+ 'P26': 9,
+ 'P27': 9,
+ 'P28': 9,
+ 'P29': 9,
+ 'P30': 5,
+ 'P31': 10
+                }
+
 répondeurs_resp = {'P01': 'non_répondeur', # those who increase cycle freq during music AND decrease cycle freq during odor = 16 répondeurs, 14 non répondeurs
                      'P02': 'répondeur',
                      'P03': 'non_répondeur',
