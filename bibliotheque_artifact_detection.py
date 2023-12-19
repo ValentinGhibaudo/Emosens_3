@@ -1,3 +1,5 @@
+# TOOLS FOR ARTIFACT DETECTION AND REPLACEMENT
+
 import numpy as np
 import pandas as pd
 from scipy import interpolate
@@ -37,6 +39,32 @@ def compute_rms(x):
     return np.sqrt(ms)
 
 def sliding_rms(x, sf, window=0.5, step=0.2, interp=True):
+    """
+    Compute a sliding root mean square 
+
+    ----------
+    Parameters
+    ----------
+    - x : np.array
+        Signal
+    - sf : float
+        Sampling frequency
+    - window : float
+        Duration of the sliding window in seconds
+    - step : float
+        Time duration between steps
+    - interp : bool
+        Interpolate to return a vector of same size that input signal
+
+    -------
+    Returns
+    -------
+    - t : np.array
+        Time vector of the returned trace
+    - out : np.array
+        Signal (trace) smoothed by RMS
+    """
+
     halfdur = window / 2
     n = x.size
     total_dur = n / sf
@@ -67,18 +95,6 @@ def sliding_rms(x, sf, window=0.5, step=0.2, interp=True):
         out = f(t)
 
     return t, out
-
-# def compute_artifact_features(times, srate):
-#     artifacts = pd.DataFrame()
-#     artifacts['start_ind'] = times['rises'].astype(int)
-#     artifacts['stop_ind'] = times['decays'].astype(int)
-#     artifacts['start_t'] = artifacts['start_ind'] / srate
-#     artifacts['stop_t'] = artifacts['stop_ind'] / srate
-#     artifacts['duration'] = artifacts['stop_t'] - artifacts['start_t']
-#     artifacts['size'] = np.ones(artifacts.shape[0]) * np.nan
-#     for i, row in artifacts.iterrows():
-#         artifacts.loc[i, 'size'] = np.trapz(y=detection_signal[int(row['start_ind']):int(row['stop_ind'])])
-#     return artifacts
 
 def compute_artifact_features(inds, srate):
     artifacts = pd.DataFrame()
