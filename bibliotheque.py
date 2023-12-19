@@ -203,10 +203,35 @@ def get_pos(eeg_chans=eeg_chans):
 
 
 def get_metadata():
+    """
+    Load metadata
+    
+    ----------
+    Parameters
+    ----------
+
+    -------
+    Returns
+    -------
+    - pd.DataFrame
+    """   
     return pd.read_excel(base_folder / 'Data' / 'order_stims.xlsx', index_col = 0)
 
 
 def get_anxiety_state_from_session(participant, session):
+    """
+    Load STAI state
+    
+    ----------
+    Parameters
+    ----------
+    - participant : str
+    - session : str
+    -------
+    Returns
+    -------
+    - pd.DataFrame
+    """  
     path_stai = f'/crnldata/cmo/multisite/DATA_MANIP/EEG_Lyon_VJ/Data/raw_data/{participant}/questionnaires/stai_long_form_{session}_{participant}.xlsx'
     raw_stai = pd.read_excel(path_stai)
     list_scores = list(raw_stai['score'].values)
@@ -224,6 +249,25 @@ def get_anxiety_state_from_session(participant, session):
     return etat
 
 def preproc_bio(sig, sig_type, srate, bio_filters):
+    """
+    Preproc bio signals
+    
+    ----------
+    Parameters
+    ----------
+    - sig : np.array
+    - sig_type : str
+        'ECG' or 'RespiNasale' or 'RespiVentrale' or 'GSR'
+    - srate : float
+        Sampling rate
+    - bio_filters : dict
+        Dictionnary of filter params according to type of bio signal
+
+    -------
+    Returns
+    -------
+    - np.array : bio signal filtered
+    """  
     import ghibtools as gh
     low = bio_filters[sig_type]['low']
     high = bio_filters[sig_type]['high']
@@ -232,6 +276,19 @@ def preproc_bio(sig, sig_type, srate, bio_filters):
     return gh.iirfilt(sig=sig, srate=srate, lowcut=low, highcut=high, ftype=ftype, order=order)
 
 def mne_to_xarray(raw):
+    """
+    Convert raw mne object to xarray
+    
+    ----------
+    Parameters
+    ----------
+    - raw : mne.raw object
+        
+    -------
+    Returns
+    -------
+    - xr.DataArray 
+    """  
     import ghibtools as gh
     data = raw.get_data()
     srate = raw.info['sfreq']
@@ -239,6 +296,22 @@ def mne_to_xarray(raw):
     return da
 
 def get_triggs(raw, blocs, code_trigg):
+    """
+    Load timestamps of triggers from mne.raw object
+    
+    ----------
+    Parameters
+    ----------
+    - raw : mne.raw object
+    - blocs : list
+        List of str of blocks
+    - code_trigg : dict
+        Dictionnary keys = blocs and values = code trigg
+    -------
+    Returns
+    -------
+    - pd.DataFrame
+    """  
     raw_triggs = pd.DataFrame(raw.annotations)
     rows = []
     for type_stim in raw_triggs['description'].unique():
@@ -258,12 +331,39 @@ def get_triggs(raw, blocs, code_trigg):
     return df_triggs
 
 def get_odor_from_session(run_key):
+    """
+    Get odor name from (sub_ses)
+    
+    ----------
+    Parameters
+    ----------
+    - run_key : str
+        sub_ses
+
+    -------
+    Returns
+    -------
+    - str
+    """  
     participant, session = run_key.split('_')[0], run_key.split('_')[1]
     file = data_path / 'raw_data' / 'metadata.xlsx'
     df = pd.read_excel(file, index_col = 0)
     return df.loc[participant,session]
 
 def processing_raw_maia(participant):
+    """
+    Process MAIA questionnaire
+    
+    ----------
+    Parameters
+    ----------
+    - participant : str
+
+    -------
+    Returns
+    -------
+    - pd.DataFrame
+    """  
     path_maia = f'/crnldata/cmo/multisite/DATA_MANIP/EEG_Lyon_VJ/Data/raw_data/{participant}/questionnaires/maia_{participant}.xlsx'
     raw_maia = pd.read_excel(path_maia)
 
@@ -281,6 +381,20 @@ def processing_raw_maia(participant):
     return pd.DataFrame.from_dict(dict_means, orient = 'index').T.set_index('participant').astype(float).reset_index()
 
 def processing_stai_longform(participant, session):
+    """
+    Process STAI Longform
+    
+    ----------
+    Parameters
+    ----------
+    - participant : str
+    - session : str
+
+    -------
+    Returns
+    -------
+    - pd.DataFrame
+    """  
     path_stai = f'/crnldata/cmo/multisite/DATA_MANIP/EEG_Lyon_VJ/Data/raw_data/{participant}/questionnaires/stai_long_form_{session}_{participant}.xlsx'
     raw_stai = pd.read_excel(path_stai)
     sujet = raw_stai['participant'][0]
@@ -321,7 +435,21 @@ def processing_stai_longform(participant, session):
     return pd.DataFrame.from_dict(dict_results, orient = 'index').T
 
         
-def processing_short_stai(participant, session):  
+def processing_short_stai(participant, session):
+    """
+    Process STAI Shortform
+    
+    ----------
+    Parameters
+    ----------
+    - participant : str
+    - session : str
+
+    -------
+    Returns
+    -------
+    - pd.DataFrame
+    """  
     import glob  
     odeur = get_odor_from_session(participant, session)
     logtrigg = glob.glob(f'/crnldata/cmo/multisite/DATA_MANIP/EEG_Lyon_VJ/Data/raw_data/{participant}/questionnaires/sub{participants_label[participant]}_{session}_LogTrigger*')
@@ -390,6 +518,23 @@ def processing_short_stai(participant, session):
 
 
 def get_raw_mne(run_key, participants_label, preload=False):
+    """
+    Load Brainvision into mne.raw object
+    
+    ----------
+    Parameters
+    ----------
+    - run_key : str
+    - participants_label : dict
+        Dictionnary of conversion participant label to participant num
+    - preload : bool
+        Lazy load or not
+
+    -------
+    Returns
+    -------
+    - mne.raw object
+    """  
     import mne
     participant, session = run_key.split('_')
     file = data_path / f'{participant}' / 'signaux' / f'sub{participants_label[participant]}_{session}.vhdr'
@@ -397,6 +542,26 @@ def get_raw_mne(run_key, participants_label, preload=False):
     return raw
 
 def permutation_test_homemade(x,y, design = 'within', n_resamples=999, diff = 'mean'):
+    """
+    Permutation test
+    
+    ----------
+    Parameters
+    ----------
+    - x : np.array
+    - y : np.array
+    - design : str
+        'within' or 'between' according to the design
+    - n_resamples : int
+        Number of iterations to create null distribution
+    - diff : str
+        'mean' or 'median' to compute mean difference of median difference between the two groups
+
+    -------
+    Returns
+    -------
+    - pvalue : float
+    """  
     def statistic(x, y):
         if diff == 'mean':
             return np.mean(x) - np.mean(y)
@@ -423,7 +588,7 @@ def get_pval(df, predictor, outcome, subject=None, design='within', verbose = Fa
     return results['p']
 
 def get_df_mask_chan_signif(df, chans, predictor, outcome, subject, design = 'within', multicomp_method = 'bonf', stats_type = 'permutations', diff = 'mean'):
-    
+
     def statistic(x, y):
         if diff == 'mean':
             return np.mean(x) - np.mean(y)
@@ -453,6 +618,26 @@ def get_df_mask_chan_signif(df, chans, predictor, outcome, subject, design = 'wi
     return chan_signif
 
 def cluster_stats(x1,x2, chans, verbose = False):
+    """
+    Cluster based statistics on repeated measures
+    
+    ----------
+    Parameters
+    ----------
+    - x1 : np.array
+        Size = len(chans)
+    - x2 : np.array
+        Size = len(chans)
+    - chans : list
+        List of channel names in the same order than the corresponding value in x1/x2
+    - verbose : bool
+        Verbosity of the process
+
+    -------
+    Returns
+    -------
+    - np.array of bool
+    """  
     import mne
     
     X = x2 - x1
