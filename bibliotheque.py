@@ -1,3 +1,5 @@
+# TOOLS FOR VARIOUS UTILITIES
+
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -6,6 +8,25 @@ from configuration import base_folder, data_path
 from params import *
 
 def keep_clean(df_raw, metrics_to_clean, fill_method = 'ffill'):
+    """
+    Cleaning of dataframes with a keep session columns that indicates to keep or remove the session
+
+    ----------
+    Parameters
+    ----------
+    - df_raw : pd.DataFrame
+        pd.DataFrame with a keep_session column that indicates to keep remove or not the session (the row)
+    - metrics_to_clean : list
+        List of name of metrics that have to undergo the the cleaning
+    - fill_method : str
+        pandas fill method to replace the Nan
+
+    -------
+    Returns
+    -------
+    - df_clean : pd.DataFrame
+        Cleaned dataframe
+    """
     df_raw_nan = df_raw.reset_index()
     # mask_clean = (df_raw_nan['keep_chan'] == 1) & (df_raw_nan['keep_trial'] == 1)
     mask_clean = (df_raw_nan['keep_session'] == 1) 
@@ -16,7 +37,18 @@ def keep_clean(df_raw, metrics_to_clean, fill_method = 'ffill'):
 
 def mad(data, axis=0):
     """
-    Compute median absolute deviation along 0 axis
+    Compute median absolute deviation along defined axis
+
+    ----------
+    Parameters
+    ----------
+    - data : np.array
+    - axis : int
+
+    -------
+    Returns
+    -------
+    - float or np.array
     """
     return np.median(np.abs(data - np.median(data, axis = axis)), axis = axis) * 1.4826
 
@@ -24,12 +56,24 @@ def complex_mw(time, n_cycles , freq, a = 1, m = 0):
     """
     Create a complex morlet wavelet by multiplying a gaussian window to a complex sinewave of a given frequency
     
-    ------------------------------
-    a = amplitude of the wavelet
-    time = time vector of the wavelet
-    n_cycles = number of cycles in the wavelet
-    freq = frequency of the wavelet
-    m = 
+    ----------
+    Parameters
+    ----------
+    time : np.array
+        Time vector of the wavelet
+    n_cycles : int
+        Number of cycles in the wavelet
+    freq : float 
+        frequency of the wavelet
+    a : float
+        amplitude of the wavelet
+    m : float
+        center of the time window
+    -------
+    Returns
+    -------
+    - np.array
+        Complex morlet wavelet
     """
     s = n_cycles / (2 * np.pi * freq)
     GaussWin = a * np.exp( -(time - m)** 2 / (2 * s**2)) # real gaussian window
@@ -38,6 +82,26 @@ def complex_mw(time, n_cycles , freq, a = 1, m = 0):
     return cmw
 
 def define_morlet_family(freqs, cycles , srate, return_time = False):
+    """
+    Create a complex morlet wavelet family
+    
+    ----------
+    Parameters
+    ----------
+    freqs : np.array
+        Frequency vector 
+    cycles : int
+        Number of cycles in the wavelets
+    srate : float 
+        Frequency of the wavelet
+    return_time : bool
+        Return time if True added to morlet family
+    -------
+    Returns
+    -------
+    - 2D np.array
+        Complex morlet wavelet family with 0-axis = frequency and 1-axis = time
+    """
     tmw = np.arange(-10,10,1/srate)
     mw_family = np.zeros((freqs.size, tmw.size), dtype = 'complex')
     for i, fi in enumerate(freqs):
@@ -50,6 +114,25 @@ def define_morlet_family(freqs, cycles , srate, return_time = False):
         return mw_family
 
 def df_baseline(df, indexes, metrics, mode = 'ratio'):
+    """
+    Normalize dataframe data according to baseline
+    
+    ----------
+    Parameters
+    ----------
+    df : pd.DataFrame
+        pd.DataFrame tidy containg odor, music, and baseline data
+    indexes : list
+        Column names to be set as indexes
+    metrics : list 
+        Column names whose data will undergo normalization
+    mode : str
+        Could be 'ratio' or 'substract' to normalize by division of subtraction 
+    -------
+    Returns
+    -------
+    - pd.DataFrame
+    """
     odor = df[df['session'] == 'odor'].set_index(indexes)
     music = df[df['session'] == 'music'].set_index(indexes)
     baseline = df[df['session'] == 'baseline'].set_index(indexes)
@@ -67,6 +150,22 @@ def df_baseline(df, indexes, metrics, mode = 'ratio'):
     return pd.concat([df_odor, df_music]).reset_index()
 
 def init_nan_da(coords, name = None):
+    """
+    Initialize an DataArray (xarray) filled with Nan
+    
+    ----------
+    Parameters
+    ----------
+    coords : dict
+        Dictionnary whose keys will be dimension names of the DataArray and values will be the coordinates of the corresponding dims 
+    name : str
+        Name of the DataArray
+
+    -------
+    Returns
+    -------
+    - xr.DataArray
+    """
     dims = list(coords.keys())
     coords = coords
 
@@ -81,7 +180,20 @@ def init_nan_da(coords, name = None):
     return da
 
 def get_pos(eeg_chans=eeg_chans):
+    """
+    Get MNE position info object according to 10_20 standard
     
+    ----------
+    Parameters
+    ----------
+    eeg_chans : list
+        Channel names list
+
+    -------
+    Returns
+    -------
+    - pos : mne.info
+    """   
     import mne
     ch_types = ['eeg'] * len(eeg_chans)
     pos = mne.create_info(eeg_chans, ch_types=ch_types, sfreq=srate)
