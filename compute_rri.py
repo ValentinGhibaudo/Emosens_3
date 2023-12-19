@@ -124,7 +124,7 @@ def ecg_peaks_coupling(run_key, **p):
     for i, row in rsp_features.iterrows():
         mask_r_peaks_in_cycle = (ecg_peaks['peak_time'] >= row['inspi_time']) & (ecg_peaks['peak_time'] < row['next_inspi_time'])
         r_peaks_in_cycle = ecg_peaks[mask_r_peaks_in_cycle]
-        ecg_peak_angles.loc[r_peaks_in_cycle.index, 'Resp_Angle'] = ((r_peaks_in_cycle['peak_time'].values - row['inspi_time']) / row['cycle_duration']) * 2 * np.pi
+        ecg_peak_angles.loc[r_peaks_in_cycle.index, 'Resp_Angle'] = ((r_peaks_in_cycle['peak_time'].values - row['inspi_time']) / row['cycle_duration'])
 
     return xr.Dataset(ecg_peak_angles)
 
@@ -150,7 +150,7 @@ def compute_all():
     # jobtools.compute_job_list(ecg_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(ecg_peak_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(rri_signal_job, run_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(ecg_peaks_coupling_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(ecg_peaks_coupling_job, run_keys, force_recompute=True, engine='loop')
 
 
 if __name__ == '__main__':

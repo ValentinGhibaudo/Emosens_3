@@ -1,6 +1,6 @@
 # Analysis pipeline for Emosens 3 data
 
-This folder is organized into 6 types of python scripts : 
+This repository is organized into 5 types of python scripts : 
 
 - 1) Scripts containing useful tools (functions) and variables used in several scripts : 
     - bibliotheque_artifact_detection.py
@@ -56,6 +56,38 @@ This folder is organized into 6 types of python scripts :
     - sandbox.ipynb
     - spectro_artifacts.py
 
+
+
+The second type of scripts (computing scripts) are coded thanks to entangled jobs (output = xarray.Dataset()) corresponding to the following : 
+- preproc.py
+    * convert_vhdr_job
+        - function : Convert raw data from brainvision to an xarray format
+        - recruit : --
+        - run keys : sub, ses
+    * ica_figure_job
+        - function : Save ICA figures to manually select (in a dictionnary in params.py) for each sub/ses the EOG components to remove
+        - recruit : --
+        - run keys : sub, ses
+    * preproc_job
+        - function : Preproc raw EEG (Notch + ICA + detrend + bandpass filter)
+        - recruit : --
+        - run keys : sub, ses
+    * artifact_job
+        - function : Detect movement artifacts based on sharp cooccuring burst of gamma power on all channels
+        - recruit : preproc_job
+        - run keys : sub, ses
+    * artifact_by_chan_job
+        - function : Detect movement artifacts based on sharp burst of gamma power channel by channel
+        - recruit : preproc_job
+        - run keys : sub, ses
+    * eeg_interp_artifact_job
+        - function : Replace movement artifacts times by patches of signal containing the average frequency content of the whole signal of the channel
+        - recruit : preproc_job + artifact_by_chan_job
+        - run keys : sub, ses
+    * count_artifact_job
+        - function : Count time duration (absolute and relative) of movement artifacting 
+        - recruit : artifact_job
+        - run keys : sub
 
 
 
