@@ -8,12 +8,20 @@ from scipy import signal
 def detect_cross(sig, threshold):
     """
     Detect crossings
-    ------
-    inputs =
-    - sig : numpy 1D array
-    - show : plot figure showing rising zerox in red and decaying zerox in green (default = False)
-    output =
-    - pandas dataframe with index of rises and decays
+
+    ----------
+    Parameters
+    ----------
+    - sig : np.array
+        A signal
+    - threshold : float
+        Amplitude threshold where crossings are detected
+
+    -------
+    Returns
+    -------
+    - pd.DataFrame or None
+        Pandas dataframe with index of rises and decays or None if nothing detected
     """
     rises, = np.where((sig[:-1] <=threshold) & (sig[1:] >threshold)) # detect where sign inversion from - to +
     decays, = np.where((sig[:-1] >=threshold) & (sig[1:] <threshold)) # detect where sign inversion from + to -
@@ -30,7 +38,21 @@ def detect_cross(sig, threshold):
         return None
 
 def compute_rms(x):
-    """Fast root mean square."""
+    """
+    Fast root mean square
+    ----------
+    Parameters
+    ----------
+    - x : np.array
+        A signal
+
+    -------
+    Returns
+    -------
+    - np.array
+        Same size than input but Root Mean Squared
+    """
+
     n = x.size
     ms = 0
     for i in range(n):
@@ -97,6 +119,20 @@ def sliding_rms(x, sf, window=0.5, step=0.2, interp=True):
     return t, out
 
 def compute_artifact_features(inds, srate):
+    """
+    Compute temporal features of output of detect_cross() 
+    ----------
+    Parameters
+    ----------
+    - inds : pd.DataFrame
+        pd.DataFrame with rises and decays index = output of detect_cross()
+
+    -------
+    Returns
+    -------
+    - pd.DataFrame
+        Same size than input but with temporal features for each pair of rise/decay
+    """
     artifacts = pd.DataFrame()
     artifacts['start_ind'] = inds['rises'].astype(int)
     artifacts['stop_ind'] = inds['decays'].astype(int)
@@ -107,7 +143,32 @@ def compute_artifact_features(inds, srate):
 
 
 def detect_artifacts(sig, srate, n_deviations = 5, low_freq = 40 , high_freq = 150, wsize = 1, step = 0.2):
-    
+    """
+    Detect artifacts based on burst of low_freq to high_freq power deduced from filtering + sliding RMS of the filtered signal
+    ----------
+    Parameters
+    ----------
+    - sig : np.array
+        Raw signal
+    - srate : float
+        Sampling rate
+    - n_deviations : float
+        Number of MAD deviations from the median of the RMS filtered signal
+    - low_freq : float
+        Low cutoff frequency of the IIR filter
+    - high_freq : float
+        High cutoff frequency of the IIR filter
+    - wsize : float
+        Window size (duration) in seconds of the RMS window
+    - step : 
+        Time duration between steps of RMS window
+
+    -------
+    Returns
+    -------
+    - pd.DataFrame or None
+        pd.DataFrame of tempotal features of artifacted windows or None if no artifact detected
+    """  
     import ghibtools as gh
     
     sig_filtered = gh.iirfilt(sig, srate, low_freq, high_freq, ftype = 'bessel', order = 2)
@@ -125,6 +186,30 @@ def detect_artifacts(sig, srate, n_deviations = 5, low_freq = 40 , high_freq = 1
     
     
 def insert_noise(sig, srate, chan_artifacts, freq_min=30., margin_s=0.2, seed=None):
+    """
+    Insert patches of white noise coloured with average power content of a signal where artifacts have been detected in itself
+    ----------
+    Parameters
+    ----------
+    - sig : np.array
+        Raw signal
+    - srate : float
+        Sampling rate
+    - chan_artifacts : pd.DataFrame
+        Output of detect_artifacts() which contains temporal features of artifacts
+    - freq_min : float
+        Low cutoff frequency of the computing of average power content of the signal
+    - margin_s : float
+        Duration in seconds of the margins at the edge of patches where a tapering is done to smooth transition between sig-patch-sig
+    - seed : int or None
+        Seed to generate random noise
+
+    -------
+    Returns
+    -------
+    - sig_corrected : np.array
+        Signal corrected with patches of coloured noise
+    """  
     sig_corrected = sig.copy()
 
     margin = int(srate * margin_s)
