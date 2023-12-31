@@ -16,6 +16,25 @@ import numba
 
 @numba.jit(parallel=True, nopython = False)
 def HR2T(sample):
+    """
+    Compute Hermans-Rasson 2 test (https://doi.org/10.1186/s12898-019-0246-8)
+
+    Hermans Rasson test is a good alternative to Rayleigh test to ask if a sample of circular 
+    data seems to be drawn from a uniform distribution  or not. 
+    It is usable in case of multimodal distribution.
+
+    ----------
+    Parameters
+    ----------
+    - sample : np.array
+        Array of angles in radians 
+
+    -------
+    Returns
+    -------
+    - T : float
+        Test value
+    """
     n = sample.size
     # total = 0
     local_sums = np.zeros(n)
@@ -39,7 +58,32 @@ def HR2T(sample):
 #     T = np.sum(np.abs(np.abs(d) - np.pi) - (np.pi / 2) - 2.895 * (np.abs(np.sin(d)) - (2 / np.pi))) / sample.size
 #     return T
 
-def HR2P(sample, univals = 1000, seed=None, progress_bar = False): # Hermans-Rasson 2 p-value
+def HR2P(sample, univals = 1000, seed=None, progress_bar = False): 
+    """
+    Compute Hermans-Rasson 2 test (https://doi.org/10.1186/s12898-019-0246-8)
+
+    Hermans Rasson test is a good alternative to Rayleigh test to ask if a sample of circular 
+    data seems to be drawn from a uniform distribution  or not. 
+    It is usable in case of multimodal distribution.
+
+    ----------
+    Parameters
+    ----------
+    - sample : np.array
+        Array of angles in radians 
+    - univals : int
+        Number of iterations to create null distribution. Default = 1000
+    - seed : int
+        For randommness. Default = None
+    - progress_bar : bool
+        To display progress bar. Default is False
+
+    -------
+    Returns
+    -------
+    - p : float
+        p-value
+    """
     rng = np.random.default_rng(seed=seed)
     Tsample = HR2T(sample)
     n = sample.size
