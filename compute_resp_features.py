@@ -5,35 +5,39 @@ import jobtools
 from preproc import convert_vhdr_job, artifact_job
 
 def compute_respiration_features(run_key, **p):
+    """
+    Compute respiration features from raw resp signal and 
+    annotate cycles according to cooccuring artifacting of EEG signals
+    """
     import physio 
     
     sub, ses = run_key.split('_')
     
-    raw_dataset = convert_vhdr_job.get(run_key)
+    raw_dataset = convert_vhdr_job.get(run_key) # load raw data
     
-    resp_raw = raw_dataset['raw'].sel(chan='RespiNasale', time = slice(0, p['session_duration'])).values[:-1]
+    resp_raw = raw_dataset['raw'].sel(chan='RespiNasale', time = slice(0, p['session_duration'])).values[:-1] # get raw resp
     srate = raw_dataset['raw'].attrs['srate']
     
-    if p['inspiration_sign'] == '+':
+    if p['inspiration_sign'] == '+': # invert signal to have inhalation below 0
         resp_raw = -resp_raw
 
-    resp, resp_cycles = physio.compute_respiration(resp_raw, srate, parameter_preset='human_airflow')
+    resp, resp_cycles = physio.compute_respiration(resp_raw, srate, parameter_preset='human_airflow') # preproc resp and compute resp cycle features
     resp_cycles['participant'] = sub
     resp_cycles['session'] = ses
     
-    artifacts = artifact_job.get(run_key).to_dataframe()
+    artifacts = artifact_job.get(run_key).to_dataframe() # load timestamps of EEG artifacts
     
     resp_artifacted = resp_cycles.copy()
     resp_artifacted['artifact'] = 0
     
-    for i, cycle_respi in resp_artifacted.iterrows():
-        window_cycle_respi = np.arange(cycle_respi['inspi_index'], cycle_respi['next_inspi_index'])
+    for i, cycle_respi in resp_artifacted.iterrows(): # loop over resp cycles
+        window_cycle_respi = np.arange(cycle_respi['inspi_index'], cycle_respi['next_inspi_index']) # construct an index time vector of the current resp cycle
         
-        for j, artifact in artifacts.iterrows():
-            window_artifact = np.arange(artifact['start_ind'], artifact['stop_ind'])
+        for j, artifact in artifacts.iterrows(): # loop over artifacts
+            window_artifact = np.arange(artifact['start_ind'], artifact['stop_ind']) # construct an index time vector of the current resp cycle 
             
-            if sum(np.in1d(window_cycle_respi, window_artifact)) != 0:
-                resp_artifacted.loc[i, 'artifact'] = 1
+            if sum(np.in1d(window_cycle_respi, window_artifact)) != 0: # see if index vector of current resp cycle in current artifact are overlapping or not
+                resp_artifacted.loc[i, 'artifact'] = 1 # resp cycle is marked by 1 value if an artifacted overlap itself
     
     ds = xr.Dataset(resp_artifacted)
     
