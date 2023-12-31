@@ -111,7 +111,7 @@ The second type of scripts (computing scripts) are coded thanks to entangled job
 
 - compute_coherence.py
     * coherence_job
-        - function : Compute magnitude squated coherence between EEG and Resp signals
+        - function : Compute magnitude squared coherence between EEG and Resp signals
         - recruit : eeg_interp_artifact_job + convert_vhdr_job (to get resp signal)
         - run keys : sub, ses
     * coherence_at_resp_job
