@@ -10,26 +10,29 @@ from preproc import eeg_interp_artifact_job
 
 ### PSD LF
 def compute_psd(run_key, **p):
+    """
+    Compute power spectrum of EEG (lowest freq = 0.1 Hz)
+    """
     
-    eeg = eeg_interp_artifact_job.get(run_key)['interp']
+    eeg = eeg_interp_artifact_job.get(run_key)['interp'] # load
     srate = eeg.attrs['srate']
     
     psd = None
     
-    for chan in eeg.coords['chan'].values:
+    for chan in eeg.coords['chan'].values: # loop on chans
         sig = eeg.sel(chan=chan).values
-        f , Pxx = gh.spectre(sig, srate, p['lowest_freq'])
+        f , Pxx = gh.spectre(sig, srate, p['lowest_freq']) # welch method to compute power spectrum with windows containing at least 5 cycles of the set "lowest frequency"
         
         if psd is None:
-            psd = init_nan_da({'chan':eeg.coords['chan'].values, 
-                               'freq':f})
+            psd = init_nan_da({'chan':eeg.coords['chan'].values, # initialize datarray at the first iteration
+                               'freq':f}) 
             
-        psd.loc[chan, : ] = Pxx
+        psd.loc[chan, : ] = Pxx #  store spectrum of the chan in a datarray
                     
     psd.attrs['srate'] = srate
     psd_ds = xr.Dataset()
-    psd_ds['psd'] = psd
-    return psd_ds
+    psd_ds['psd'] = psd # store datarray in dataset
+    return psd_ds 
 
 
 def test_compute_psd():
@@ -44,24 +47,27 @@ jobtools.register_job(psd_eeg_job)
 
 ### PSD BANDPOWER
 def compute_psd_bandpower(run_key, **p):
+    """
+    Compute power spectrum of EEG (lowest freq = 1 Hz) ready to extract bandpower
+    """
     
-    eeg = eeg_interp_artifact_job.get(run_key)['interp']
+    eeg = eeg_interp_artifact_job.get(run_key)['interp'] # load
     srate = eeg.attrs['srate']
     
     psd = None
     
-    for chan in eeg.coords['chan'].values:
+    for chan in eeg.coords['chan'].values: # loop on chans
         sig = eeg.sel(chan=chan).values
-        f , Pxx = gh.spectre(sig, srate, p['lowest_freq'])
+        f , Pxx = gh.spectre(sig, srate, p['lowest_freq']) # welch method to compute power spectrum with windows containing at least 5 cycles of the set "lowest frequency"
         
         if psd is None:
-            psd = init_nan_da({'chan':eeg.coords['chan'].values, 
+            psd = init_nan_da({'chan':eeg.coords['chan'].values, # initialize datarray at the first iteration
                                'freq':f})
             
-        psd.loc[chan, : ] = Pxx            
+        psd.loc[chan, : ] = Pxx  #  store spectrum of the chan in a datarray    
     psd.attrs['srate'] = srate
     psd_ds = xr.Dataset()
-    psd_ds['psd_bandpower'] = psd
+    psd_ds['psd_bandpower'] = psd # store datarray in dataset
     return psd_ds
 
 def test_compute_psd_bandpower():
@@ -74,12 +80,15 @@ jobtools.register_job(psd_bandpower_job)
 
 # psd_baselined
 def psd_baselined(run_key, **p):
+    """
+    Normalize power spectrum of music and odor session by baseline session power spectrum
+    """
     sub, ses = run_key.split('_')
-    psd_stim = psd_bandpower_job.get(run_key)['psd_bandpower']
-    psd_baseline = psd_bandpower_job.get(f'{sub}_baseline')['psd_bandpower']
+    psd_stim = psd_bandpower_job.get(run_key)['psd_bandpower'] # load psd of music or odor
+    psd_baseline = psd_bandpower_job.get(f'{sub}_baseline')['psd_bandpower'] # load psd of baseline
     
     psd_stim_baselined = psd_stim.copy()
-    psd_stim_baselined[:] = psd_stim.values / psd_baseline.values
+    psd_stim_baselined[:] = psd_stim.values / psd_baseline.values # divide power spectrum of music or odor by baseline spectrum
     ds = xr.Dataset()
     ds['psd_baselined'] = psd_stim_baselined
     return ds
