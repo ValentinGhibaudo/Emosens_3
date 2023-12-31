@@ -69,7 +69,7 @@ The second type of scripts (computing scripts) are coded thanks to entangled job
         - recruit : --
         - run keys : sub, ses
     * preproc_job
-        - function : Preproc raw EEG (Notch + ICA + detrend + bandpass filter)
+        - function : Preproc raw EEG (Reref + Notch + ICA + detrend + bandpass filter)
         - recruit : --
         - run keys : sub, ses
     * artifact_job

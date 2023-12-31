@@ -11,9 +11,12 @@ from bibliotheque_artifact_detection import detect_artifacts, sliding_rms, compu
 
 
 def convert_vhdr(run_key, **p):
-    raw = get_raw_mne(run_key, participants_label, preload=True)
+    """
+    Convert raw data from brainvision to an xarray format
+    """
+    raw = get_raw_mne(run_key, participants_label, preload=True) # convert brainvision to mne
     ds = xr.Dataset()
-    ds['raw'] = mne_to_xarray(raw)
+    ds['raw'] = mne_to_xarray(raw) # convert mne to xarray
     return ds
 
 
@@ -25,12 +28,35 @@ def test_convert_vhdr():
 
 
 def apply_ica(raw_eeg, exclude, participant, session, n_components, save_figures=False):
+    """
+    Compute ICA and exclude ICA components defined in parameters
+
+    ----------
+    Parameters
+    ----------
+    - raw eeg : mne raw object
+    - exclude : list
+        List of integers, each one corresponding the the components to exclude
+    - participant : str
+        Participant label (to label fig)
+    - session : str
+        Session label (to label fig)
+    - n_components : int
+        Number of ICA components to subdivide data
+    - save_figures : bool
+        Save figure if True. Default is False
+
+    -------
+    Returns
+    -------
+    - raw_without_filter_but_with_ica : mne object without excluded components
+    """
     import mne
     import ghibtools as gh
     raw_eeg_for_ica_filtered = raw_eeg.copy()
     raw_eeg_for_ica_filtered = raw_eeg_for_ica_filtered.filter(1, None, fir_design='firwin', verbose = 'CRITICAL') # filter with highpass 1 Hz for better working of ICA
 
-    random_state = 27
+    random_state = 27 # random constant number
     method = 'fastica'
     ica = mne.preprocessing.ICA(n_components=n_components, random_state=random_state, method=method, verbose = 'CRITICAL') # compute ICA
     ica.fit(raw_eeg_for_ica_filtered, verbose = 'CRITICAL') # run ICA on provided raw data
@@ -54,7 +80,7 @@ def apply_ica(raw_eeg, exclude, participant, session, n_components, save_figures
         rows = []
         for i in range(sources_signals.shape[0]):
             f, Pxx = gh.spectre(sources_signals[i], srate, lowest_freq = lowest)
-            slow_power = np.trapz(Pxx[(f > 0.7) & (f < 1.4)])
+            slow_power = np.trapz(Pxx[(f > 0.7) & (f < 1.4)]) # compute integral (power) of slow frequency band that could vary according to eye artifacts
             rows.append([participant, session, i, slow_power])
             mask = (f > lowest)
             ax.loglog(f[mask], Pxx[mask], label = i)
@@ -62,7 +88,7 @@ def apply_ica(raw_eeg, exclude, participant, session, n_components, save_figures
             ax.axvline(x=j, color='red', alpha = 0.2)
             
         powers = pd.DataFrame(rows, columns = ['participant','session','component', 'slow_power']).sort_values(by = 'slow_power', ascending = False)
-        order_compo = list(powers['component'].values)
+        order_compo = list(powers['component'].values) # sorted list of components according to slow power, may be according to presence of eye movements
         
         ax.grid(which = 'minor', alpha = 0.3)
         ax.set_ylabel('Power [µV**2]')
@@ -92,14 +118,17 @@ def apply_ica(raw_eeg, exclude, participant, session, n_components, save_figures
     
 
 def compute_ica_figure(run_key, **p):
-
+    """
+    Save ICA figures to manually select (in a dictionnary in params.py) 
+    for each sub/ses the EOG components to remove
+    """
     participant, session = run_key.split('_')
 
-    raw = get_raw_mne(run_key, participants_label, preload=True)
+    raw = get_raw_mne(run_key, participants_label, preload=True) # load data into raw mne object
     raw_eeg = raw.copy()
-    raw_eeg = raw_eeg.pick_types(eeg = True)
+    raw_eeg = raw_eeg.pick_types(eeg = True) # select just eeg data
 
-    apply_ica(raw_eeg, [0], participant, session, p['n_components_decomposition'], save_figures=True)
+    apply_ica(raw_eeg, [0], participant, session, p['n_components_decomposition'], save_figures=True) # save_figures = True to save
 
     return None
 
@@ -115,38 +144,42 @@ def test_compute_ica_figure():
 
 
 def compute_preproc(run_key, **p):
+    """
+    Preproc raw EEG (Reref + Notch + ICA + detrend + bandpass filter)
+    """
     import mne
     import ghibtools as gh
 
 
     participant, session = run_key.split('_')
 
-    raw = get_raw_mne(run_key, participants_label, preload=True)
-    raw.crop(tmin = 0, tmax = p['session_duration'], include_tmax = False)
+    # LOAD
+    raw = get_raw_mne(run_key, participants_label, preload=True) # full load in mne object
+    raw.crop(tmin = 0, tmax = p['session_duration'], include_tmax = False) # crop to 10 mins
     
-    if not p['reref'] is None:
-        raw = mne.add_reference_channels(raw, 'Cz',copy = True)
-        raw,_ = mne.set_eeg_reference(inst=raw, ref_channels=p['reref'], copy=True, ch_type = 'eeg', verbose = False)
+    # REREF
+    if not p['reref'] is None: 
+        raw = mne.add_reference_channels(raw, 'Cz',copy = True) # recompute signal of acquisition ref
+        raw,_ = mne.set_eeg_reference(inst=raw, ref_channels=p['reref'], copy=True, ch_type = 'eeg', verbose = False) # reref
 
     # NOTCH
     raw_notched = raw.copy()
     raw_notched.notch_filter(p['notch_freqs'], verbose = False)
 
-    # PREPROC NEURO (ICA)
+    # ICA
     ica_excluded_component = p['ica_excluded_component']
     exclude = ica_excluded_component[participant][session]
     raw_eeg = raw.copy()
-    raw_eeg = raw_eeg.pick_types(eeg = True)
-    raw_clean_from_eog = apply_ica(raw_eeg, exclude, participant, session, p['n_components_decomposition'], save_figures= p['save_ica_fig'])
+    raw_eeg = raw_eeg.pick_types(eeg = True) # select eeg data
+    raw_clean_from_eog = apply_ica(raw_eeg, exclude, participant, session, p['n_components_decomposition'], save_figures= p['save_ica_fig']) # just apply ICA by exluding EOG components as explored in pre-saved figures
     
-    data = raw_clean_from_eog.get_data()
+    # DETREND AND FILTERING
+    data = raw_clean_from_eog.get_data() # mne object to numpy
+    data_detrended = signal.detrend(data, axis = 1) # detrend
+    data_filtered = gh.iirfilt(data_detrended, srate, lowcut = p['lowcut'], highcut= p['highcut'], order = p['order'] , axis = 1) # filtering
     
-    data_detrended = signal.detrend(data, axis = 1)
-    data_filtered = gh.iirfilt(data_detrended, srate, lowcut = p['lowcut'], highcut= p['highcut'], order = p['order'] , axis = 1)
-    
+    # OUTPUT in XARRAY DATASET
     times = np.arange(data.shape[1]) / srate
-
-    # CONCAT DATA
     ds = xr.Dataset()
     ds['eeg_clean'] = xr.DataArray(data = data_filtered, dims = ['chan','time'],
                                    coords = {'chan':raw_clean_from_eog.ch_names, 'time':times}, 
@@ -161,24 +194,27 @@ def test_compute_preproc():
     
     
 def detect_movement_artifacts(run_key, **p):
+    """
+    Detect movement artifacts based on sharp cooccuring burst of gamma power on all channels
+    """
     import ghibtools as gh
     
-    da = preproc_job.get(run_key)['eeg_clean']
+    da = preproc_job.get(run_key)['eeg_clean'] # load
     srate = da.attrs['srate']
     
-    eeg_filt = gh.iirfilt(da.values, srate, p['lf'], p['hf'], ftype = 'bessel', order = 2, axis = 1)
+    eeg_filt = gh.iirfilt(da.values, srate, p['lf'], p['hf'], ftype = 'bessel', order = 2, axis = 1) # filter on artifact frequency band
     masks = eeg_filt.copy()
     
-    for i in range(eeg_filt.shape[0]):
+    for i in range(eeg_filt.shape[0]): # loop on channels
         sig_chan_filtered = eeg_filt[i,:]
-        t, rms_chan = sliding_rms(sig_chan_filtered, sf=srate, window = p['window_size'], step = p['step']) 
-        pos, dev = gh.med_mad(rms_chan)
-        detect_threshold = pos + p['n_deviations'] * dev
-        masks[i,:] = rms_chan > detect_threshold
+        t, rms_chan = sliding_rms(sig_chan_filtered, sf=srate, window = p['window_size'], step = p['step']) # get smooth amplitude of filtered sig
+        pos, dev = gh.med_mad(rms_chan) # signal statistics
+        detect_threshold = pos + p['n_deviations'] * dev # compute threshold
+        masks[i,:] = rms_chan > detect_threshold # True value when artifact
     
-    compress_chans = masks.sum(axis = 0)
-    inds = detect_cross(compress_chans, p['n_chan_artifacted']+0.5)
-    artifacts = compute_artifact_features(inds, srate)
+    compress_chans = masks.sum(axis = 0) # sum of True on chan axis
+    inds = detect_cross(compress_chans, p['n_chan_artifacted']+0.5) # detect inds when at least p['n_chan_artifact'] are artifacted at the same time
+    artifacts = compute_artifact_features(inds, srate) # compute dataframe that summarizes artifacts temporality
     
     return xr.Dataset(artifacts)
 
@@ -192,30 +228,33 @@ def test_detect_movement_artifacts():
     
 
 def detect_movement_artifacts_by_channel(run_key, **p):
+    """
+    Detect movement artifacts based on sharp burst of gamma power channel by channel
+    """
     import ghibtools as gh
     
-    da = preproc_job.get(run_key)['eeg_clean']
+    da = preproc_job.get(run_key)['eeg_clean'] # load
     srate = da.attrs['srate']
     
-    eeg_filt = gh.iirfilt(da.values, srate, p['lf'], p['hf'], ftype = 'bessel', order = 2, axis = 1)
+    eeg_filt = gh.iirfilt(da.values, srate, p['lf'], p['hf'], ftype = 'bessel', order = 2, axis = 1) # filter on artifact frequency band
     
-    artifacts = []
-    for i in range(eeg_filt.shape[0]):
+    artifacts = [] # initialise a list of dataframes that will bo concatenated
+    for i in range(eeg_filt.shape[0]): # loop on channels
         chan = da.coords['chan'].values[i]
         sig_chan_filtered = eeg_filt[i,:]
-        t, rms_chan = sliding_rms(sig_chan_filtered, sf=srate, window = p['window_size'], step = p['step']) 
-        pos, dev = gh.med_mad(rms_chan)
-        detect_threshold = pos + p['n_deviations'] * dev
-        cross = detect_cross((rms_chan > detect_threshold).astype(int), 0.5)
+        t, rms_chan = sliding_rms(sig_chan_filtered, sf=srate, window = p['window_size'], step = p['step']) # get smooth amplitude of filtered sig
+        pos, dev = gh.med_mad(rms_chan) # signal statistics
+        detect_threshold = pos + p['n_deviations'] * dev # compute threshold
+        cross = detect_cross((rms_chan > detect_threshold).astype(int), 0.5) # 1 value when artifact and detect starts and stop inds of artifact zones and store into a dataframe
         if not cross is None:
             cross['chan'] = chan
             artifacts.append(cross)
     
-    artifacts = pd.concat(artifacts, axis=0)
-    artifacts['start_t'] = artifacts['rises'] / srate
-    artifacts['stop_t'] = artifacts['decays'] / srate
-    artifacts = artifacts.rename(columns = {'rises':'start_ind','decays':'stop_ind'})
-    return xr.Dataset(artifacts)
+    artifacts = pd.concat(artifacts, axis=0) # concat artifact dataframes
+    artifacts['start_t'] = artifacts['rises'] / srate # transform inds in times
+    artifacts['stop_t'] = artifacts['decays'] / srate # transform inds in times
+    artifacts = artifacts.rename(columns = {'rises':'start_ind','decays':'stop_ind'}) # rename colnames
+    return xr.Dataset(artifacts) # dataframe to xarray dataset
 
 
 def test_detect_movement_artifacts_by_channel():
@@ -225,18 +264,22 @@ def test_detect_movement_artifacts_by_channel():
     
     
 def interp_artifact(run_key, **p):
+    """
+    Replace movement artifacts times by interpolation of patches 
+    of signal containing the average frequency content of the whole signal of the channel
+    """
     import ghibtools as gh
-    eeg = preproc_job.get(run_key)['eeg_clean']
+    eeg = preproc_job.get(run_key)['eeg_clean'] # load sigs
     srate = eeg.attrs['srate']
     
-    artifacts = artifact_by_chan_job.get(run_key).to_dataframe()
+    artifacts = artifact_by_chan_job.get(run_key).to_dataframe() # laod artifacts
     
     eeg_patched = eeg.copy()
     
     for chan in eeg.coords['chan'].values:
         chan_artifacts = artifacts[artifacts['chan'] == chan]
         if chan_artifacts.shape[0] != 0:
-            eeg_patched.loc[chan,:] = insert_noise(eeg.loc[chan,:].values, srate, chan_artifacts, p['freq_min'], p['margin_s'] , p['seed'])
+            eeg_patched.loc[chan,:] = insert_noise(eeg.loc[chan,:].values, srate, chan_artifacts, p['freq_min'], p['margin_s'] , p['seed']) # insert colored noise in artifact zones
         else:
             eeg_patched.loc[chan,:] = eeg.loc[chan,:].values
     
@@ -253,6 +296,9 @@ def test_interp_artifact():
     
     
 def count_artifact(sub_key, **p):
+    """
+    Count time duration (absolute and relative) of movement artifacting 
+    """
     rows = []
     for ses in session_keys:
         run_key = f'{sub_key}_{ses}'
@@ -265,7 +311,7 @@ def count_artifact(sub_key, **p):
     
     columns = ['participant','session', 'n_secs_artifacted','prop_secs_artifacted']
     df = pd.DataFrame(rows, columns=columns)
-    df['remove'] = df['prop_secs_artifacted'].apply(lambda x : 1 if x > p['thresh_prop_time_artifacted'] else 0)
+    df['remove'] = df['prop_secs_artifacted'].apply(lambda x : 1 if x > p['thresh_prop_time_artifacted'] else 0) # remove session = 1 if too much artifact
     return xr.Dataset(df)
 
 def test_count_artifact():
