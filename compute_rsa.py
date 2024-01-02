@@ -9,14 +9,18 @@ from params import *
 from configuration import *
 
 def compute_rsa_phase(run_key, **p):
-    resp_cycles = respiration_features_job.get(run_key).to_dataframe()
-    ecg_peaks = ecg_peak_job.get(run_key).to_dataframe()
+    """
+    Cyclically deform heart rate signal according to respiratory timestamps of each respiratory cycle
+    """
+    resp_cycles = respiration_features_job.get(run_key).to_dataframe() # load resp features
+    ecg_peaks = ecg_peak_job.get(run_key).to_dataframe() # load ecg peaks
 
-    rsa_cycles, cyclic_cardiac_rate = physio.compute_rsa(resp_cycles,
+    # Compute heart rate dynamics cycle by cycle
+    rsa_cycles, cyclic_cardiac_rate = physio.compute_rsa(resp_cycles, 
                                                          ecg_peaks,
-                                                         srate=10.,
-                                                         two_segment=True,
-                                                         points_per_cycle=p['n_phase_bins'],
+                                                         srate=10., # srate of the output
+                                                         two_segment=True, # stretched or not according to inspi-expi transition
+                                                         points_per_cycle=p['n_phase_bins'], # number of phase bins of the output
                                                         )
     
     rsa_da = xr.DataArray(data = cyclic_cardiac_rate,
@@ -37,10 +41,14 @@ jobtools.register_job(rsa_phase_job)
 
 
 def compute_rsa_features(run_key, **p):
+    """
+    Extract Respiratory Sinus Arrhythmia features respiratory cycle by respiratory cycle
+    """
     sub, ses = run_key.split('_')
-    resp_cycles = respiration_features_job.get(run_key).to_dataframe()
-    ecg_peaks = ecg_peak_job.get(run_key).to_dataframe()
+    resp_cycles = respiration_features_job.get(run_key).to_dataframe() # load resp features
+    ecg_peaks = ecg_peak_job.get(run_key).to_dataframe() # load ecg peaks
 
+    # Compute RSA features cycle by cycle
     rsa_cycles, cyclic_cardiac_rate = physio.compute_rsa(resp_cycles,
                                                          ecg_peaks,
                                                          srate=10.,
