@@ -20,6 +20,10 @@ import physio
 #----------------------#
 
 def sig_to_tf(sig, p, srate):
+    """
+    Tool to compute time frequency from signal with complex morlet wavelets according to predefined params 
+    aiming to define the wavelets features
+    """
     freqs = np.logspace(np.log10(p['f_start']), np.log10(p['f_stop']), num = p['n_freqs'], base = 10)
     cycles = np.logspace(np.log10(p['c_start']), np.log10(p['c_stop']), num = p['n_freqs'], base = 10)
 
@@ -27,33 +31,35 @@ def sig_to_tf(sig, p, srate):
 
     sigs = np.tile(sig, (p['n_freqs'],1))
     tf = signal.fftconvolve(sigs, mw_family, mode = 'same', axes = 1)
-    return {'f':freqs, 'tf':tf}
+    return {'f':freqs, 'tf':tf} # return dict with freq vector and time-frequency map in complex domain
 
 def compute_power(sub, ses, chan, **p):
-
-    eeg = eeg_interp_artifact_job.get(sub,ses)['interp']
+    """
+    Compute time frequency power maps of EEG signals by convolution with morlet wavelets
+    """
+    eeg = eeg_interp_artifact_job.get(sub,ses)['interp'] # load eeg
     chans = eeg['chan'].values
     srate = eeg.attrs['srate']
-    down_srate = srate /  p['decimate_factor']
+    down_srate = srate /  p['decimate_factor'] # down sampling to reduce computation time
 
     powers = None
 
-    sig = eeg.sel(chan = chan).values
-    tf_dict = sig_to_tf(sig, p, srate)
-    power = np.abs(tf_dict['tf']) ** p['amplitude_exponent']
-    power = signal.decimate(x = power, q = p['decimate_factor'], axis = 1)
-    t_down = np.arange(0, power.shape[1] / down_srate, 1 / down_srate)
+    sig = eeg.sel(chan = chan).values # select eeg signal
+    tf_dict = sig_to_tf(sig, p, srate) # compute time frequency complex map (with morlet wavelets)
+    power = np.abs(tf_dict['tf']) ** p['amplitude_exponent'] # extract power from time frequency complex map
+    power = signal.decimate(x = power, q = p['decimate_factor'], axis = 1) # down sampling power map in time axis to reduce storage size
+    t_down = np.arange(0, power.shape[1] / down_srate, 1 / down_srate) # compute the time vector of the down sampled power map
 
     if powers is None:
-        powers = init_nan_da({'freq':tf_dict['f'],
+        powers = init_nan_da({'freq':tf_dict['f'], # initialize a dataarray freq * time
                             'time':t_down})
                             
-    powers.loc[:,:] = power
+    powers.loc[:,:] = power # store power map in dataarray
 
-    powers.attrs['down_srate'] = down_srate
+    powers.attrs['down_srate'] = down_srate # store sampling rate of the down sampled power map as a attribute
     
     ds = xr.Dataset()
-    ds['power'] = powers
+    ds['power'] = powers # store in dataset
     return ds
 
 def test_compute_power():
@@ -72,23 +78,26 @@ jobtools.register_job(power_job)
 #----------------------#
 
 def compute_baseline(sub, chan, **p):
-
-    baseline_power = power_job.get(sub, 'baseline', chan)['power']
-    baseline_power[:] = baseline_power.values
+    """
+    Compute mean/median/sd/mad of EEG time frequency power 
+    for each frequency bin (so on time axis) from baseline session
+    """
+    baseline_power = power_job.get(sub, 'baseline', chan)['power'] # load power map of baseline session
+    baseline_power[:] = baseline_power.values # load into memory
     
     baselines = None 
     
-    if baselines is None:
+    if baselines is None: # initialize datarray with baseline features
         baselines = init_nan_da({'mode':['mean','med','sd','mad'], 
                                     'freq':baseline_power['freq'].values})
         
-    baselines.loc['mean' , :] = baseline_power.mean('time')
-    baselines.loc['med' , :] = baseline_power.median('time')
-    baselines.loc['sd' , :] = baseline_power.std('time')
-    baselines.loc['mad' , :] = mad(baseline_power.values.T) # time must be on 0 axis
+    baselines.loc['mean' , :] = baseline_power.mean('time') # compute mean power of baseline over time axis
+    baselines.loc['med' , :] = baseline_power.median('time') # compute median power of baseline over time axis
+    baselines.loc['sd' , :] = baseline_power.std('time') # compute std power of baseline over time axis
+    baselines.loc['mad' , :] = mad(baseline_power.values.T) # compute MAD power of baseline over time axis. Time must be on 0 axis
         
     ds = xr.Dataset()
-    ds['baseline'] = baselines
+    ds['baseline'] = baselines # store datarray in dataset
     return ds
 
 def test_compute_baseline():
@@ -104,7 +113,12 @@ jobtools.register_job(baseline_job)
 #----- PHASE FREQ -----#
 #----------------------#
 
-def apply_baseline_normalization(power, baseline, mode):   
+def apply_baseline_normalization(power, baseline, mode): 
+    """
+    Tool to normalize raw power map according to baseline features
+    by z-scoring (power - mean_baseline) / sd_baseline
+    or robust z-scoring (power - median_baseline) / mad_baseline
+    """  
     if mode == 'z_score':
         power_norm = (power - baseline['mean']) / baseline['sd']
             
@@ -113,18 +127,21 @@ def apply_baseline_normalization(power, baseline, mode):
     return power_norm
     
 def compute_phase_frequency(sub, ses, chan, **p):
-    
-    powers = power_job.get(sub, ses, chan)['power']
+    """
+    Normalize raw time frequency power maps by baseline 
+    + cyclically deform it by respiratory epochs/timestamps to get phase frequency power maps
+    """
+    powers = power_job.get(sub, ses, chan)['power'] # load raw power map
     freqs = powers['freq'].values
     times = powers['time'].values
 
-    baselines = baseline_job.get(sub, chan)['baseline']
+    baselines = baseline_job.get(sub, chan)['baseline'] # load baseline features
 
-    cycle_features = respiration_features_job.get(sub, ses).to_dataframe()
-    cycle_times = cycle_features[['inspi_time','expi_time','next_inspi_time']].values
+    cycle_features = respiration_features_job.get(sub, ses).to_dataframe() # load resp features
+    cycle_times = cycle_features[['inspi_time','expi_time','next_inspi_time']].values # get respi times for deformation of the map
     
     mask_artifact = cycle_features['artifact'] == 0
-    inds_resp_cycle_sel = cycle_features[mask_artifact].index
+    inds_resp_cycle_sel = cycle_features[mask_artifact].index # select inds of resp cycles without cooccuring EEG artifacting
     
     baseline_modes = ['z_score','rz_score']
     
@@ -139,10 +156,11 @@ def compute_phase_frequency(sub, ses, chan, **p):
                 'mad':baselines.loc['mad',:].values
                 }
     
-    for mode in baseline_modes:
+    for mode in baseline_modes: # loop over baseline modes (z-score or robust z-score)
     
-        power_norm = apply_baseline_normalization(power = power.T, baseline = baseline, mode = mode)
+        power_norm = apply_baseline_normalization(power = power.T, baseline = baseline, mode = mode) # normalize power according to the mode
         
+        # deform the normalized power map according to respiratory timestamps to get a phase representation of it
         deformed_data_stacked = physio.deform_traces_to_cycle_template(data = power_norm, 
                                                                         times = times, 
                                                                         cycle_times=cycle_times, 
@@ -151,20 +169,20 @@ def compute_phase_frequency(sub, ses, chan, **p):
 
 
         
-        deformed_data_stacked = deformed_data_stacked[inds_resp_cycle_sel,:,:]
+        deformed_data_stacked = deformed_data_stacked[inds_resp_cycle_sel,:,:] # keep only non artifacted cycles
     
         
-        if phase_freq_power is None: 
+        if phase_freq_power is None: # initalize phase frequency dataarray
             phase_freq_power = init_nan_da({'baseline_mode':baseline_modes, 
-                                        'compress_cycle_mode':p['compress_cycle_modes'],
+                                        'compress_cycle_mode':p['compress_cycle_modes'], # different cycle axis compression methods 
                                         'freq':freqs, 
                                         'phase':np.linspace(0,1,p['n_phase_bins'])})
 
-        for compress in p['compress_cycle_modes']:
+        for compress in p['compress_cycle_modes']: # loop of cycle axis compression methods and store the output at the right location in dataarray
             if compress == 10:
-                phase_freq_power.loc[mode, compress, :,:] = np.mean(deformed_data_stacked, axis = 0).T
+                phase_freq_power.loc[mode, compress, :,:] = np.mean(deformed_data_stacked, axis = 0).T # mean over cycle axis
             else:
-                phase_freq_power.loc[mode, compress, :,:] = np.quantile(deformed_data_stacked, q = compress, axis = 0).T
+                phase_freq_power.loc[mode, compress, :,:] = np.quantile(deformed_data_stacked, q = compress, axis = 0).T # quantile computing over cycle axis
             
     ds = xr.Dataset()
     ds['phase_freq'] = phase_freq_power
@@ -182,16 +200,19 @@ jobtools.register_job(phase_freq_job)
 
 
 def phase_freq_concat(chan, **p):
+    """
+    Concatenate phase-frequency power maps from sub,ses into one Dataset by channel
+    """
     all_phase_freq = None
 
-    for sub in p['sub_keys']:
-        for ses in p['ses_keys']:
-            ds_phase_freq = phase_freq_job.get(sub,ses,chan)
+    for sub in p['sub_keys']: # loop over subjects
+        for ses in p['ses_keys']:  # loop over sessions
+            ds_phase_freq = phase_freq_job.get(sub,ses,chan) # load phase freq map
 
             power = ds_phase_freq['phase_freq']
 
         
-            if all_phase_freq is None:
+            if all_phase_freq is None: # initialize right shaped datarray
                 all_phase_freq = init_nan_da({'participant':p['sub_keys'], 
                                             'session':p['ses_keys'], 
                                             'compress_cycle_mode':p['compress_cycle_modes'],
@@ -199,9 +220,9 @@ def phase_freq_concat(chan, **p):
                                             'phase':power.coords['phase'].values
                                             })
 
-            all_phase_freq.loc[sub, ses, :,:,:] = power.loc[p['baseline_mode'] ,:,:,:].values
+            all_phase_freq.loc[sub, ses, :,:,:] = power.loc[p['baseline_mode'] ,:,:,:].values # select a baselining method store datarray at the right location
 
-    all_phase_freq = all_phase_freq.loc[:,:,:,:p['max_freq'],:]
+    all_phase_freq = all_phase_freq.loc[:,:,:,:p['max_freq'],:] # zoom on a useful frequency band
     ds = xr.Dataset()
     ds['phase_freq_concat'] = all_phase_freq
     return ds
@@ -221,27 +242,30 @@ jobtools.register_job(phase_freq_concat_job)
 #----------------------#
 
 def compute_erp_time_freq(sub, ses, chan, **p):
-    
+    """
+    Same process than phase freq but without cyclically deforming EEG data, keeping a time basis, 
+    and average time-frequency power dynamic centered on a respiratory time point
+    """
     half_window_duration = p['half_window_duration']
 
-    power_all = power_job.get(sub, ses, chan)['power']
+    power_all = power_job.get(sub, ses, chan)['power'] # load power
     power_all[:] = power_all.values
 
     down_srate = power_all.attrs['down_srate']
 
-    cycle_features = respiration_features_job.get(sub, ses).to_dataframe() 
-    resp_sel = cycle_features[cycle_features['artifact'] == 0]
+    cycle_features = respiration_features_job.get(sub, ses).to_dataframe() # load resp features
+    resp_sel = cycle_features[cycle_features['artifact'] == 0] # keep EEG non-artifacted resp cycles
     resp_sel = resp_sel.reset_index(drop = True)
     resp_sel = resp_sel.iloc[:-2,:] # remove last two cycles that could be overlapping the end of session
 
     # print(resp_sel.iloc[-1,:]['inspi_time'] * down_srate + half_window_duration * down_srate)
 
-    baselines = baseline_job.get(sub, chan)['baseline']
+    baselines = baseline_job.get(sub, chan)['baseline'] # load baseline features
     baselines[:] = baselines.values
     baseline_modes = ['z_score','rz_score']
 
     centers_slice = ['inspi_time','expi_time']
-    win_size_points = int(half_window_duration * 2 * down_srate)
+    win_size_points = int(half_window_duration * 2 * down_srate) # prepare window size
     
     erp_power = None
 
@@ -254,26 +278,26 @@ def compute_erp_time_freq(sub, ses, chan, **p):
                 'mad':baselines.loc['mad',:].values
                 }
 
-    for mode in baseline_modes:
-        power_norm = apply_baseline_normalization(power = power.T, baseline = baseline_dict, mode = mode).T
+    for mode in baseline_modes: # loop over normalization methods
+        power_norm = apply_baseline_normalization(power = power.T, baseline = baseline_dict, mode = mode).T # normalize
 
         erp_power_chan = None
 
-        for center_slice in centers_slice:
+        for center_slice in centers_slice: # loop over respi transitions (inspi-expi and expi-inspi)
 
-            for ind_c, c in resp_sel.iterrows():
-                win_center = c[center_slice]
-                win_start = win_center - half_window_duration
-                win_start_point = int(win_start * down_srate)
-                win_stop_point = win_start_point + win_size_points 
-                win = np.arange(win_start_point, win_stop_point)
+            for ind_c, c in resp_sel.iterrows(): # loop over resp cycles
+                win_center = c[center_slice] # select resp timestamp
+                win_start = win_center - half_window_duration # compute start time of window
+                win_start_point = int(win_start * down_srate)  # compute start ind of window
+                win_stop_point = win_start_point + win_size_points  # compute stop ind of window
+                win = np.arange(win_start_point, win_stop_point) # compute window ind vector
 
-                if erp_power_chan is None:
+                if erp_power_chan is None: # initialize right shaped datarray
                     erp_power_chan = init_nan_da({'cycle':resp_sel.index,
                                                 'freq':power_all['freq'].values,
                                                 'time':np.arange(-half_window_duration, half_window_duration , 1 / down_srate)})
                 
-                erp_power_chan.loc[ind_c, : ,:] = power_norm[:,win]
+                erp_power_chan.loc[ind_c, : ,:] = power_norm[:,win] # select power of the window and store in a the right location (cycle)
 
             if erp_power is None:
                 erp_power = init_nan_da({'baseline_mode':baseline_modes,
@@ -282,9 +306,9 @@ def compute_erp_time_freq(sub, ses, chan, **p):
                                     'time':erp_power_chan.coords['time'].values})
             
             if type(p['compress_cycle_mode']) is str:
-                erp_power.loc[mode, center_slice, :,:] = erp_power_chan.mean(dim = 'cycle').values
+                erp_power.loc[mode, center_slice, :,:] = erp_power_chan.mean(dim = 'cycle').values # average over resp cycles axis
             elif type(p['compress_cycle_mode']) is float:
-                erp_power.loc[mode, center_slice, :,:] = erp_power_chan.quantile(dim = 'cycle', q = p['compress_cycle_mode']).values
+                erp_power.loc[mode, center_slice, :,:] = erp_power_chan.quantile(dim = 'cycle', q = p['compress_cycle_mode']).values # quantile computing over resp cycles axis
      
     erp_power.attrs['down_srate'] = down_srate
     ds = xr.Dataset()
@@ -300,22 +324,25 @@ erp_time_freq_job = jobtools.Job(precomputedir, 'erp_time_freq', erp_time_freq_p
 jobtools.register_job(erp_time_freq_job)
 
 def erp_time_freq_concat(chan, **p):
+    """
+    Concatenate erp power maps from sub,ses into one Dataset by channel
+    """
     erp_concat = None
 
-    for sub in p['sub_keys']:
-        for ses in p['ses_keys']:
-            ds = erp_time_freq_job.get(sub,ses,chan)
+    for sub in p['sub_keys']: # loop over subjects
+        for ses in p['ses_keys']: # loop over sessions
+            ds = erp_time_freq_job.get(sub,ses,chan) # load power
 
             erp = ds['erp_time_freq']
 
-            if erp_concat is None:
+            if erp_concat is None: # initialize the right shaped datarray
                 erp_concat = init_nan_da({'participant':p['sub_keys'], 
                                             'session':p['ses_keys'], 
                                             'freq':erp.coords['freq'].values,
                                             'time':erp.coords['time'].values
                                             })
 
-            erp_concat.loc[sub, ses,:,:] = erp.loc[p['baseline_mode'],p['center'],:,:].values
+            erp_concat.loc[sub, ses,:,:] = erp.loc[p['baseline_mode'],p['center'],:,:].values # select baselining method and resp timestamp and store it at the right location
 
     erp_concat = erp_concat.loc[:,:,:p['max_freq'],:]
     ds = xr.Dataset()
