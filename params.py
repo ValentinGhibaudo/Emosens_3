@@ -323,8 +323,8 @@ artifact_by_chan_params = {
 
 interp_artifact_params = {
     'artifact_params':artifact_params,
-    'freq_min':30.,
-    'margin_s':0.2, 
+    'freq_min':30., # lowcut of frequency band to compute average power of whole signal to colour white noise before inserting in artifacted zones
+    'margin_s':0.2, # duration of margins in seconds at the edge of artifact zones to smooth transition between real and patched signal
     'seed':None
 }
 
@@ -350,18 +350,18 @@ rri_signal_params = {
     'ecg_params' : ecg_params,
     'max_interval' : 120, # in bpm
     'min_interval': 30., # in bpm
-    'interpolation_kind': 'cubic',
+    'interpolation_kind': 'cubic', # interpolation of RRI signal as cubic or linear to get heart rate signal
 }
 
 
 psd_params = {
     'interp_artifact_params':interp_artifact_params,
-    'lowest_freq':0.1,
+    'lowest_freq':0.1, # lowest frequency interpretable in PSD = at least 5 cycles of this frequency in each Hann window
 }
 
 psd_bandpower_params = {
     'interp_artifact_params':interp_artifact_params,
-    'lowest_freq':1,
+    'lowest_freq':1, # lowest frequency interpretable in PSD = at least 5 cycles of this frequency in each Hann window
 }
 
 psd_baselined_params = {
@@ -377,16 +377,16 @@ power_at_resp_params = {
     'psd_params':psd_params,
     'session_duration':session_duration,
     'resp_chan':'RespiNasale',
-    'lowest_freq_psd_resp':0.1,
+    'lowest_freq_psd_resp':0.1, # lowest frequency interpretable in PSD = at least 5 cycles of this frequency in each Hann window
 }
 
 coherence_params = {
     'interp_artifact_params':interp_artifact_params,
     'resp_chan':'RespiNasale',
-    'lowest_freq_psd_resp':0.15,
-    'lowest_freq_coherence':0.15,
-    'nfft_factor':2,
-    'n_cycles':4,
+    'lowest_freq_psd_resp':0.15, # lowest frequency interpretable in coherence = at least 5 cycles of this frequency in each window
+    'lowest_freq_coherence':0.15, # lowest frequency interpretable in coherence = at least 5 cycles of this frequency in each window
+    'nfft_factor':2, # zero padding = window length * nfft_factor
+    'n_cycles':4, # at least 'n_cycles' cycles of lowest frequency in each window
     'session_duration':session_duration
 }
 
@@ -397,13 +397,13 @@ coherence_at_resp_params = {
 power_params = {
     'interp_artifact_params':interp_artifact_params,
     'chans':['F3','F4','C3','C4','T7','T8','P7','P8','O1','O2','Fz','Pz','Oz'],
-    'decimate_factor':10,
-    'n_freqs':150,
-    'f_start':4,
-    'f_stop':150,
-    'c_start':10,
-    'c_stop':30,
-    'amplitude_exponent':2
+    'decimate_factor':10, # down sampling power maps with this factor to reduce computation time / storage size
+    'n_freqs':150, # number of frequency bins
+    'f_start':4, # lowest frequency of time-frequency maps (logarithm increase then)
+    'f_stop':150, # highest frequency of time-frequency maps (logarithm increase before)
+    'c_start':10, # start number of oscillations of wavelets (for the f_start, logarithmically increasing)
+    'c_stop':30, # stop number of oscillations of wavelets (for the f_stop, logarithmically increasing)
+    'amplitude_exponent':2 # exponent to transform amplitude into power
 }
 
 baseline_params = {'power_params':power_params}
@@ -413,9 +413,9 @@ phase_freq_params = {
     'power_params':power_params,
     'respiration_features_params':respiration_features_params,
     'baseline_params':baseline_params,
-    'n_phase_bins':200,
-    'segment_ratios':0.4,
-    'compress_cycle_modes':[0.1,0.2,0.25,0.3,0.4,0.5,0.6,0.7,0.75,0.8,0.9,10] # 10 = 'mean'
+    'n_phase_bins':200, # number of phase bins in phase frequency maps
+    'segment_ratios':0.4, # ratio inspi / expi standardized
+    'compress_cycle_modes':[0.1,0.2,0.25,0.3,0.4,0.5,0.6,0.7,0.75,0.8,0.9,10] # 10 = 'mean', rest = quantiles
 }
 
 phase_freq_concat_params = {
@@ -423,9 +423,9 @@ phase_freq_concat_params = {
     'ses_keys':session_keys,
     'chans':eeg_chans,
     'phase_freq_params':phase_freq_params,
-    'baseline_mode':'rz_score',
+    'baseline_mode':'rz_score', # baseline mode = robust zscore (rz_score) or z-score (z_score)
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
-    'max_freq':20
+    'max_freq':20 # zoom frequency vector lower that 'max_freq'
 }
 
 phase_freq_fig_params = {
@@ -434,37 +434,37 @@ phase_freq_fig_params = {
     'segment_ratios':phase_freq_params['segment_ratios'],
     'baseline_mode':phase_freq_concat_params['baseline_mode'],
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
-    'delta_colorlim':0.01,
+    'delta_colorlim':0.01, # saturation of time-freq figure colors according to the 'delta_colorlim' to 1 - 'delta_colorlim' range
     'compress_subject':'Mean', # Mean or Median or q75
-    'max_freq':phase_freq_concat_params['max_freq'],
-    'cmap':'viridis',
-    'quantile_by_subject_fig':0.75,
-    'cluster_based_pval':0.05
+    'max_freq':phase_freq_concat_params['max_freq'], # zoom frequency vector
+    'cmap':'viridis', # colormap of phase freq figures
+    'quantile_by_subject_fig':0.75, # quantile to compress cycle axis
+    'cluster_based_pval':0.05 # pvalue threshold to display significant time-freq points via cluster based permutations statistics
 }
 
 erp_time_freq_params = {
     'baseline_params':baseline_params,
     'power_params':power_params,
-    'half_window_duration':5,
-    'compress_cycle_mode':0.75
+    'half_window_duration':5, # half size of windows in seconds
+    'compress_cycle_mode':0.75 # quantile to compress cycle axis
 }
 
 erp_time_freq_concat_params = {
     'sub_keys':subject_keys,
     'ses_keys':session_keys,
     'erp_time_freq_params':erp_time_freq_params,
-    'baseline_mode':'rz_score',
-    'center':'expi_time',
-    'max_freq':phase_freq_concat_params['max_freq']
+    'baseline_mode':'rz_score', # baseline method
+    'center':'expi_time', # respi timestamp at the center of the windowed time-frequency maps
+    'max_freq':phase_freq_concat_params['max_freq'] # zoom frequency vector below this frequency
 }
 
 erp_fig_params = {
     'erp_time_freq_concat_params':erp_time_freq_concat_params,
     'chans':eeg_chans,
     'baseline_mode':erp_time_freq_concat_params['baseline_mode'],
-    'delta_colorlim':0.01,
-    'max_freq':erp_time_freq_concat_params['max_freq'],
-    'cmap':'viridis'
+    'delta_colorlim':0.01, # saturation of time-freq figure colors according to the 'delta_colorlim' to 1 - 'delta_colorlim' range
+    'max_freq':erp_time_freq_concat_params['max_freq'], # zoom frequency vector below this frequency
+    'cmap':'viridis' # colormap used for time freq figures
 }
 
 time_phase_fig_params = {
@@ -474,13 +474,13 @@ time_phase_fig_params = {
     'segment_ratios':phase_freq_params['segment_ratios'],
     'baseline_mode':phase_freq_concat_params['baseline_mode'],
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
-    'delta_colorlim':0.01,
-    'min_freq':6,
-    'max_freq':14,
-    'cmap':'viridis',
-    'cluster_based_pval':0.05,
-    'find_cluster_pval':0.04,
-    'cluster_tail':-1
+    'delta_colorlim':0.01, # saturation of time-freq figure colors according to the 'delta_colorlim' to 1 - 'delta_colorlim' range
+    'min_freq':6, # low cutoff frequency to zoom in frequency vector to construct figs
+    'max_freq':14, # high cutoff frequency to zoom in frequency vector to construct figs
+    'cmap':'viridis', # colormap used for time freq figures
+    'cluster_based_pval':0.05, # pvalue threshold to display significant clusters time-freq points via clusted based permutation statistics
+    'find_cluster_pval':0.04, # pvalue to find significantly large enough clusters of time-freq points
+    'cluster_tail':-1 # one sided (-1 or +1) or two sided (0)
 }
 
 global_just_phase_fig_params =   { 'phase_freq_concat_params':phase_freq_concat_params,
@@ -488,13 +488,13 @@ global_just_phase_fig_params =   { 'phase_freq_concat_params':phase_freq_concat_
     'segment_ratios':phase_freq_params['segment_ratios'],
     'baseline_mode':phase_freq_concat_params['baseline_mode'],
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
-    'delta_colorlim':0.01,
-    'min_freq':6,
-    'max_freq':14,
-    'cmap':'viridis',
-    'cluster_based_pval':0.05,
-    'find_cluster_pval':0.04,
-    'cluster_tail':-1
+    'delta_colorlim':0.01, # saturation of time-freq figure colors according to the 'delta_colorlim' to 1 - 'delta_colorlim' range
+    'min_freq':6,# low cutoff frequency to zoom in frequency vector to construct figs
+    'max_freq':14, # high cutoff frequency to zoom in frequency vector to construct figs
+    'cmap':'viridis', # colormap used for time freq figures
+    'cluster_based_pval':0.05, # pvalue threshold to display significant clusters time-freq points via clusted based permutation statistics
+    'find_cluster_pval':0.04, # pvalue to find significantly large enough clusters of time-freq points
+    'cluster_tail':-1 # one sided (-1 or +1) or two sided (0)
 }
 
 time_phase_chan_average_params = {
@@ -504,13 +504,13 @@ time_phase_chan_average_params = {
     'segment_ratios':phase_freq_params['segment_ratios'],
     'baseline_mode':phase_freq_concat_params['baseline_mode'],
     'compress_cycle_modes':phase_freq_params['compress_cycle_modes'],
-    'delta_colorlim':0.01,
-    'min_freq':6,
-    'max_freq':14,
-    'cmap':'viridis',
-    'cluster_based_pval':0.05,
-    'find_cluster_pval':0.05,
-    'cluster_tail':0
+    'delta_colorlim':0.01,# saturation of time-freq figure colors according to the 'delta_colorlim' to 1 - 'delta_colorlim' range
+    'min_freq':6,# low cutoff frequency to zoom in frequency vector to construct figs
+    'max_freq':14, # high cutoff frequency to zoom in frequency vector to construct figs
+    'cmap':'viridis',# colormap used for time freq figures
+    'cluster_based_pval':0.05,# pvalue threshold to display significant clusters time-freq points via clusted based permutation statistics
+    'find_cluster_pval':0.05, # pvalue to find significantly large enough clusters of time-freq points
+    'cluster_tail':0  # one sided (-1 or +1) or two sided (0)
 }
 
 eda_params = {
@@ -520,22 +520,22 @@ eda_params = {
 rsa_params = {
     'respiration_features_params':respiration_features_params,
     'ecg_params':ecg_params,
-    'n_phase_bins':100,
+    'n_phase_bins':100, # number of phase bins
 }
 
 stai_longform_params = {
-    'mean_etat':35.4,
-    'mean_trait':34.8,
-    'sd_etat':10.5,
-    'sd_trait':9.2
+    'mean_etat':35.4, # mean expected state anxienty in global population
+    'mean_trait':34.8, # mean expected trait anxienty in global population
+    'sd_etat':10.5, # sd expected state anxienty in global population
+    'sd_trait':9.2 # sd expected trait anxienty in global population
 }
 
 maia_params = {
     'reverse':{1:'+',2:'+',3:'+',4:'+',5:'-',6:'-',7:'-',8:'-',9:'-',10 :'+',
                11:'+', 12:'+', 13:'+', 14:'+',15:'+',16:'+', 17:'+', 18:'+', 19:'+',20:'+',
                21:'+', 22:'+', 23:'+', 24:'+',25:'+',26:'+', 27:'+', 28:'+', 29:'+',30:'+',
-               31:'+', 32:'+'},
-    'items':{
+               31:'+', 32:'+'}, # reverse questions (5 - score) if '-'
+    'items':{ # grouping of questions and their label
         'noticing':[1,2,3,4],
         'not_distracting':[5,6,7],
         'not_worrying':[8,9,10],
@@ -557,8 +557,8 @@ bmrq_params = {}
 cycle_signal_params = {
     'interp_artifact_params':interp_artifact_params,
     'respiration_features_params':respiration_features_params,
-    'n_phase_bins':1000,
-    'segment_ratios':0.4,
+    'n_phase_bins':1000, # number of phase bins
+    'segment_ratios':0.4, # standardized ratio inspi / expi
     'chans':eeg_chans,
     'session_duration':session_duration
 }
@@ -642,10 +642,10 @@ bmrq_concat_params = {'run_keys':subject_keys,
 
 cycle_signal_frames_params = {
     'cycle_signal_params':cycle_signal_params,
-    'chan_line_signal':'Cz',
-    'resp_chan':'resp_nose'
+    'chan_line_signal':'Cz', # eeg chan for example line signal
+    'resp_chan':'resp_nose'  # respi chan for example line signal
 }
 
-video_params = {'step':5,
-                'video_duration':30
+video_params = {'step':5, # down sampling frames by this factor
+                'video_duration':30 # total video duration in seconds
                }
