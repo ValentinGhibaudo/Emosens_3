@@ -21,16 +21,6 @@ from compute_cycle_signal import modulation_cycle_signal_job
 
 
 #### FUNCTIONS
-
-# def get_bad_chan_mapper(run_key):
-#     participant, session = run_key.split('_')
-#     mapper_keep_chans = {}
-    
-#     for chan in eeg_chans:
-#         keep_code = 1 if chan not in bad_channels[participant][session] else 0
-#         mapper_keep_chans[chan] = keep_code
-#     return mapper_keep_chans
-
 def get_gender_mapper():
     file = base_folder / 'Data' / 'metadata.xlsx'
     metadata = pd.read_excel(file)
@@ -65,23 +55,8 @@ def get_bmrq_mapper():
     return mapper_bmrq
 
 #### JOBS
-
-# STAI LONG 
-# def stai_long_concat(global_key, **p):
-#     concat = []
-#     for run_key in p['run_keys']:
-#         concat.append(stai_longform_job.get(run_key).to_dataframe())
-#     df_return = pd.concat(concat).reset_index(drop = True)
-#     df_return['Gender'] = df_return['participant'].map(get_gender_mapper())
-#     df_return['Maia_Mean'] = df_return['participant'].map(get_maia_mapper())
-#     return xr.Dataset(df_return)
-
-# def test_stai_long_concat():
-#     ds = stai_long_concat(global_key, **stai_long_concat_params)
-#     print(ds.to_dataframe())
-    
-# stai_long_concat_job = jobtools.Job(precomputedir, 'stai_long_concat', stai_long_concat_params, stai_long_concat)
-# jobtools.register_job(stai_long_concat_job)
+# Next jobs aim to concanenate outputs from pre defined jobs in order to store it in one dataframe by job for all subjects and sessions
+# They loop over subjects and sessions and add some co-variable like state / trait axiety + OAS + BMRQ + gender + MAIA results
 
 # MAIA
 def maia_concat(global_key, **p):
