@@ -251,3 +251,20 @@ The second type of scripts (computing scripts) are coded thanks to entangled job
         - recruit : oas_job
     * bmrq_concat_job
         - recruit : bmrq_job
+
+
+Note about job functionning : 
+* Each job is coded with : 
+    - A main function that defines the pipeline (ex : compute_respiration_features())
+    - A test function that allows debugging of the main function (ex : test_compute_respiration_features())
+    - The using of jobtools to construct a job from the main function and associate it to parameters
+    (ex : 
+        - respiration_features_job = jobtools.Job(precomputedir, # The parent folder where folder of outputs is stored
+                                                    'respiration_features', # The name of the folder where outputs are stored
+                                                    respiration_features_params, # The parameters of the job
+                                                    compute_respiration_features # The main function
+                                                    )
+        - jobtools.register_job(respiration_features_job) # Register the job
+        )
+* Once job is ready, it can be computed. To do that, it can be recruited by other jobs or manually run over all run keys by running a "compute_all()" function where the desired job is recruited (ex : jobtools.compute_job_list(respiration_features_job, run_keys, force_recompute=False, engine='loop'))
+* "test" or "compute_all" functions can be run in the "if __name__ == '__main__':" section of the scripts (last section).
