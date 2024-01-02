@@ -11,13 +11,14 @@ from pathlib import Path
 def process_maia(sub_key, **p):
     participant = sub_key
     path_maia = data_path / participant / 'questionnaires' / 'ses01' / f'maia_{participant}.xlsx'
-    raw_maia = pd.read_excel(path_maia).reset_index()
+    raw_maia = pd.read_excel(path_maia).reset_index() # load MAIA
     
     raw_maia_reversed  = raw_maia.copy()
     raw_maia_reversed['item'] = np.nan
     
-    for i, row in raw_maia.iterrows():
-        if p['reverse'][row['question']] == '+':
+    # reverse score where it has to be reversed (5 - score = reversing)
+    for i, row in raw_maia.iterrows(): 
+        if p['reverse'][row['question']] == '+': 
             raw_maia_reversed.loc[i, 'score'] = row['score']
         elif p['reverse'][row['question']] == '-':
             raw_maia_reversed.loc[i, 'score'] = 5 - row['score']
@@ -26,8 +27,8 @@ def process_maia(sub_key, **p):
     
     maia_processed = pd.DataFrame(columns = p['items'].keys())
     
-    for item, num_questions in p['items'].items():
-        maia_processed.loc[0,item] = np.mean(raw_maia_reversed.loc[num_questions, 'score'])
+    for item, num_questions in p['items'].items(): # loop over items and corresponding num of questions ..
+        maia_processed.loc[0,item] = np.mean(raw_maia_reversed.loc[num_questions, 'score']) # ... and average scores of questions and store it into dataframe
     
     maia_processed.insert(0 , 'participant', participant)
 
@@ -51,6 +52,7 @@ def process_stai_longform(run_key, **p):
     
     raw_stai = pd.read_excel(path_stai)
     
+    # reverse scores if needed
     score_corrected = []
     for i, row in raw_stai.iterrows():
         if row['correction'] == '-':
@@ -59,8 +61,8 @@ def process_stai_longform(run_key, **p):
             score_c = row['score']
         score_corrected.append(score_c)
 
-    etat = np.sum(score_corrected[0:20])
-    trait = np.sum(score_corrected[20:None])
+    etat = np.sum(score_corrected[0:20]) # state = sum of questions 0 to 19
+    trait = np.sum(score_corrected[20:None]) # trait = sum of questions 20 to 39
     
     mean_etat = p['mean_etat']
     std_etat = p['sd_etat']
@@ -98,6 +100,10 @@ jobtools.register_job(stai_longform_job)
 
 # RELAXATION
 def process_relaxation(sub_key, **p):
+    """
+    Just group raw data from multiple sessions (excel containing answers to questions)
+    and rename columns
+    """
     participant = sub_key
     
     keep_cols = ['eveil_brute','Caractère_relaxant_brute','Intensité_relaxation_brute','Longueur_session_brute']
