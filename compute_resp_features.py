@@ -34,9 +34,9 @@ def compute_respiration_features(run_key, **p):
         window_cycle_respi = np.arange(cycle_respi['inspi_index'], cycle_respi['next_inspi_index']) # construct an index time vector of the current resp cycle
         
         for j, artifact in artifacts.iterrows(): # loop over artifacts
-            window_artifact = np.arange(artifact['start_ind'], artifact['stop_ind']) # construct an index time vector of the current resp cycle 
+            window_artifact = np.arange(artifact['start_ind'], artifact['stop_ind']) # construct an index time vector of the current artifact 
             
-            if sum(np.in1d(window_cycle_respi, window_artifact)) != 0: # see if index vector of current resp cycle in current artifact are overlapping or not
+            if sum(np.in1d(window_cycle_respi, window_artifact)) != 0: # see if index vector of current resp cycle and current artifact are overlapping or not
                 resp_artifacted.loc[i, 'artifact'] = 1 # resp cycle is marked by 1 value if an artifacted overlap itself
     
     ds = xr.Dataset(resp_artifacted)

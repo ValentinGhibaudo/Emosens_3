@@ -321,13 +321,14 @@ def test_count_artifact():
     
     
 def compute_all():
-    jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
     # jobtools.compute_job_list(ica_figure_job, run_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
-    jobtools.compute_job_list(artifact_by_chan_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
-    jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
-    jobtools.compute_job_list(eeg_interp_artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
-    jobtools.compute_job_list(count_artifact_job, subject_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    # jobtools.compute_job_list(artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    # jobtools.compute_job_list(artifact_by_chan_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(convert_vhdr_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    # jobtools.compute_job_list(eeg_interp_artifact_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 6)
+    # jobtools.compute_job_list(count_artifact_job, subject_keys, force_recompute=False, engine='joblib', n_jobs = 6)
 
 
 convert_vhdr_job = jobtools.Job(precomputedir, 'convert_vhdr',convert_vhdr_params, convert_vhdr)
@@ -354,7 +355,7 @@ jobtools.register_job(count_artifact_job)
 
 
 if __name__ == '__main__':
-    test_convert_vhdr()
+    # test_convert_vhdr()
     # test_compute_ica_figure()
     # test_compute_preproc()
     # test_detect_movement_artifacts()
@@ -362,4 +363,4 @@ if __name__ == '__main__':
     # test_interp_artifact()
     # test_count_artifact()
     
-    # compute_all()
+    compute_all()
