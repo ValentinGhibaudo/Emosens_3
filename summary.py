@@ -105,7 +105,8 @@ for i, metric in enumerate(metrics):
                  strip = True,
                  lines = True,
                  xtick_info = True,
-                 fontsize = 20
+                 fontsize = 20,
+                  force_post_hoc = False
                  )
     
     ax2 = ax.twinx()
