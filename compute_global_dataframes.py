@@ -22,7 +22,7 @@ from compute_cycle_signal import modulation_cycle_signal_job
 
 #### FUNCTIONS
 def get_gender_mapper():
-    file = base_folder / 'Data' / 'metadata.xlsx'
+    file = base_folder / 'Raw_Data' / 'metadata.xlsx'
     metadata = pd.read_excel(file)
     mapper_gender = {row['participant'] : row['gender'] for i, row in metadata.iterrows()}
     return mapper_gender
@@ -449,7 +449,7 @@ if __name__ == '__main__':
     # test_maia_concat()
     # test_eda_concat()
     # test_hrv_concat()
-    # test_rsa_concat()
+    test_rsa_concat()
     # test_bandpower_concat()
     # test_coherence_at_resp_concat()
     # test_power_at_resp_concat()
@@ -458,6 +458,6 @@ if __name__ == '__main__':
     # test_modulation_cycle_signal_concat()
     # test_oas_concat()
     # test_bmrq_concat()
-    compute_and_save_all()
+    # compute_and_save_all()
     
     

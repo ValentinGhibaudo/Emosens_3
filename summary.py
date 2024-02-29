@@ -33,23 +33,27 @@ rsa = rsa.groupby(indexes).median(True).reset_index()
 hrv = hrv_concat_job.get(global_key).to_dataframe()
 hrv = hrv.rename(columns = rename_col)
 
-df_loop = [resp,rsa,hrv]
-metrics = ['cycle_duration','decay_amplitude','HRV_Mad']
-metrics_clean = ['Cycle Duration','RSA Amplitude', 'HRV MAD']
-units = ['sec','bpm','ms']
+df_loop = [resp,rsa,hrv,hrv]
+metrics = ['cycle_duration','decay_amplitude','HRV_Median','HRV_Mad']
+metrics_clean = ['Cycle Duration','RSA Amplitude','Median RRi', 'HRV MAD']
+units = ['sec','bpm','ms','ms']
+ax_pos = [[0,0],[0,1],[1,0],[1,1]]
 
-nrows = len(metrics)
+nrows = 2
+ncols = 2
 
-fig, axs = plt.subplots(nrows = nrows, figsize = (10,17), constrained_layout = True)
+fig, axs = plt.subplots(nrows = nrows, ncols=ncols, figsize = (15,12), constrained_layout = True)
 
-for r in range(nrows):
-    ax = axs[r]
-    
-    df = df_loop[r]
-    metric = metrics[r]
-    metric_clean = metrics_clean[r]
-    unit = units[r]
-    
+counter = 0
+
+for pos in ax_pos:
+    ax = axs[pos[0], pos[1]]
+
+    df = df_loop[counter]
+    metric = metrics[counter]
+    metric_clean = metrics_clean[counter]
+    unit = units[counter]
+
     gh.auto_stats(df = df, 
                   predictor = 'experimental block', 
                   outcome = metric, 
@@ -63,10 +67,20 @@ for r in range(nrows):
                  xtick_info = True,
                  fontsize= 20
                  )
-    
+
     ax2 = ax.twinx()
     ax2.set_yticks([])
-    ax2.set_title('{}'.format(letters[r]), loc = 'left', fontsize = 30)
+    ax2.set_title('{}'.format(letters[counter]), loc = 'left', fontsize = 30)
+    
+    summary_stats = gh.auto_stats_summary(df=df, 
+                                       predictor = 'experimental block', 
+                                       outcome = metric, 
+                                       design = 'within', 
+                                       subject='participant'
+                                      )
+    gh.save_auto_stats_summary(summary_stats, path = save_folder / f'stats_{metric}.xlsx')
+    
+    counter += 1
 
                 
 file =  save_folder / 'summary_physio.png'
@@ -112,6 +126,14 @@ for i, metric in enumerate(metrics):
     ax2 = ax.twinx()
     ax2.set_yticks([])
     ax2.set_title('{}'.format(letters[i]), loc = 'left', fontsize = 30)
+    
+    summary_stats = gh.auto_stats_summary(df=df, 
+                                       predictor = 'experimental block', 
+                                       outcome = metric, 
+                                       design = 'within', 
+                                       subject='participant'
+                                      )
+    gh.save_auto_stats_summary(summary_stats, path = save_folder / f'stats_{metric}.xlsx')
     
 fig.savefig(save_folder / 'summary_relaxation_subjective.png', bbox_inches = 'tight', dpi = 500)
 
