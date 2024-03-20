@@ -14,11 +14,13 @@ from bibliotheque import df_baseline
 # save_folder = base_folder / 'Figures' / 'pour_manuscrit'
 save_folder = base_folder / 'Figures' / 'pour_article'
 
-rename_col = {'session':'experimental block'}
+rename_col = {'session':'Experimental block'}
 
-indexes = ['participant','experimental block']
+indexes = ['participant','Experimental block']
 
 letters = gh.get_plot_letters()
+
+fontsizes = 15
 
 # OBJECTIVE RELAXATION
 resp = resp_features_concat_job.get(global_key).to_dataframe()
@@ -26,23 +28,23 @@ resp = resp.rename(columns = rename_col)
 resp = resp.groupby(indexes).median(True).reset_index()
 
 
-rsa = rsa_concat_job.get(global_key).to_dataframe()
-rsa = rsa.rename(columns = rename_col)
-rsa = rsa.groupby(indexes).median(True).reset_index()
+# rsa = rsa_concat_job.get(global_key).to_dataframe()
+# rsa = rsa.rename(columns = rename_col)
+# rsa = rsa.groupby(indexes).median(True).reset_index()
 
 hrv = hrv_concat_job.get(global_key).to_dataframe()
 hrv = hrv.rename(columns = rename_col)
 
-df_loop = [resp,rsa,hrv,hrv]
-metrics = ['cycle_duration','decay_amplitude','HRV_Median','HRV_Mad']
-metrics_clean = ['Cycle Duration','RSA Amplitude','Median RRi', 'HRV MAD']
-units = ['sec','bpm','ms','ms']
+df_loop = [resp,resp,hrv,hrv]
+metrics = ['cycle_duration','total_volume','HRV_Median','HRV_Mad']
+metrics_clean = ['Cycle Duration','Cycle Volume','Median RRi', 'HRV MAD']
+units = ['sec','AU','ms','ms']
 ax_pos = [[0,0],[0,1],[1,0],[1,1]]
 
 nrows = 2
 ncols = 2
 
-fig, axs = plt.subplots(nrows = nrows, ncols=ncols, figsize = (15,12), constrained_layout = True)
+fig, axs = plt.subplots(nrows = nrows, ncols=ncols, figsize = (10,7), constrained_layout = True)
 
 counter = 0
 
@@ -55,7 +57,7 @@ for pos in ax_pos:
     unit = units[counter]
 
     gh.auto_stats(df = df, 
-                  predictor = 'experimental block', 
+                  predictor = 'Experimental block', 
                   outcome = metric, 
                   design = 'within',
                   subject = 'participant', 
@@ -64,16 +66,18 @@ for pos in ax_pos:
                  outcome_unit = unit,
                  strip = True,
                  lines = True,
-                 xtick_info = True,
-                 fontsize= 20
+                 xtick_info = False,
+                 fontsize= fontsizes,
+                  with_title = False
+                  
                  )
-
+    ax.set_xlabel('')
     ax2 = ax.twinx()
     ax2.set_yticks([])
-    ax2.set_title('{}'.format(letters[counter]), loc = 'left', fontsize = 30)
+    ax2.set_title('{}'.format(letters[counter]), loc = 'left', fontsize = 20)
     
     summary_stats = gh.auto_stats_summary(df=df, 
-                                       predictor = 'experimental block', 
+                                       predictor = 'Experimental block', 
                                        outcome = metric, 
                                        design = 'within', 
                                        subject='participant'
@@ -88,28 +92,26 @@ fig.savefig(file, bbox_inches = 'tight', dpi = 500)
 plt.show()
 
 # SUBJECTIVE RELAXATION
-metrics = ['Arousal','Relaxation','Relaxation_intensity','Perceived_duration']
-df = relaxation_concat_job.get(global_key).to_dataframe()
-df = df.rename(columns = rename_col)
-df = df.drop(columns = ['stim_name'])
-df[metrics] = df[metrics].astype(float)
+metrics = ['Arousal','Relaxation_intensity','Perceived_duration']
+df_psycho = relaxation_concat_job.get(global_key).to_dataframe()
+df_psycho = df_psycho.rename(columns = rename_col)
+df_psycho = df_psycho.drop(columns = ['stim_name','Relaxation'])
+df_psycho[metrics] = df_psycho[metrics].astype(float)
 
-# metrics =  ['Relaxation_intensity','Arousal']
-# metrics_clean = ['Relaxation Intensity', 'Arousal']
-
-df = df.rename(columns = {'Relaxation_intensity':'Subjective relaxation'})
-metrics =  ['Subjective relaxation','Arousal']
-metrics_clean = ['Subjective relaxation', 'Arousal']
+df_psycho = df_psycho.rename(columns = {'Relaxation_intensity':'Relaxation'})
+metrics =  ['Relaxation','Arousal']
+metrics_clean = ['Relaxation', 'Arousal']
+# print(df)
 
 
 nrows = 2
 
-fig , axs = plt.subplots(nrows = nrows, figsize = (10,12), constrained_layout = True)
+fig , axs = plt.subplots(nrows = nrows, figsize = (6,7), constrained_layout = True)
 
 for i, metric in enumerate(metrics):
     ax = axs[i]
-    gh.auto_stats(df = df, 
-                  predictor = 'experimental block', 
+    gh.auto_stats(df = df_psycho, 
+                  predictor = 'Experimental block', 
                   outcome = metric, 
                   design = 'within', 
                   subject = 'participant', 
@@ -118,17 +120,18 @@ for i, metric in enumerate(metrics):
                   outcome_unit = '/100',
                  strip = True,
                  lines = True,
-                 xtick_info = True,
-                 fontsize = 20,
-                  force_post_hoc = False
+                 xtick_info = False,
+                 fontsize = fontsizes,
+                  force_post_hoc = False,
+                  with_title = False
                  )
-    
+    ax.set_xlabel('')
     ax2 = ax.twinx()
     ax2.set_yticks([])
-    ax2.set_title('{}'.format(letters[i]), loc = 'left', fontsize = 30)
+    ax2.set_title('{}'.format(letters[i]), loc = 'left', fontsize = 20)
     
-    summary_stats = gh.auto_stats_summary(df=df, 
-                                       predictor = 'experimental block', 
+    summary_stats = gh.auto_stats_summary(df=df_psycho, 
+                                       predictor = 'Experimental block', 
                                        outcome = metric, 
                                        design = 'within', 
                                        subject='participant'
@@ -136,4 +139,28 @@ for i, metric in enumerate(metrics):
     gh.save_auto_stats_summary(summary_stats, path = save_folder / f'stats_{metric}.xlsx')
     
 fig.savefig(save_folder / 'summary_relaxation_subjective.png', bbox_inches = 'tight', dpi = 500)
+
+
+
+
+# STATS SUMMARY TABLES
+
+dict_compute = {'cycle_duration':resp,
+                'inspi_volume':resp,
+                'expi_volume':resp,
+                'HRV_Median':hrv,
+                'HRV_Mad':hrv,
+                'Arousal':df_psycho,
+                'Relaxation':df_psycho
+               }
+
+for metric, df in dict_compute.items():
+    summary_stats = gh.auto_stats_summary(df=df, 
+                                       predictor = 'Experimental block', 
+                                       outcome = metric, 
+                                       design = 'within', 
+                                       subject='participant'
+                                      )
+    gh.save_auto_stats_summary(summary_stats, path = save_folder / f'stats_{metric}.xlsx')
+
 
