@@ -653,3 +653,14 @@ video_params = {'step':5, # down sampling frames by this factor
 slope_params = {
     'power_params':power_params
 }
+
+deform_slope_params = {
+    'slope_params':slope_params,
+    'respiration_features_params':respiration_features_params,
+    'n_phase_bins':1000, # number of phase bins
+    'segment_ratios':0.4, # standardized ratio inspi / expi
+}
+
+individual_slope_fig_params = {
+    'deform_slope_params':deform_slope_params
+}
