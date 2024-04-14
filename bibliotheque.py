@@ -4,6 +4,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 from scipy import stats
+import scipy
 from configuration import base_folder, data_path
 from params import *
 
@@ -660,3 +661,29 @@ def cluster_stats(x1,x2, chans, verbose = False):
     mask_non_signif_chans[chan_inds_non_signif] = True
     return mask_signif_chans
     # return  mask_signif_chans, mask_non_signif_chans
+
+def compute_spectrum_log_slope(spectrum, freqs, freq_range = [1,40], show = False):
+    mask = (freqs >= freq_range[0]) & (freqs <= freq_range[1])
+    f_log = np.log(freqs[mask])
+    spectrum_log = np.log(spectrum[mask])
+
+    res = scipy.stats.linregress(f_log, spectrum_log)
+    a = res.slope
+    
+    if show:
+        b = res.intercept
+        fit_log = a * f_log + b
+        fit = np.exp(a * f_log + b)
+        
+        fig, axs = plt.subplots(nrows = 2, figsize = (8,6))
+        ax = axs[0]
+        ax.plot(f_log, spectrum_log)
+        ax.plot(f_log,  fit_log)
+        ax.set_title('Slope : {:.3f}'.format(a))
+        
+        ax = axs[1]
+        ax.semilogy(freqs[mask], spectrum[mask])
+        ax.semilogy(freqs[mask],  fit)
+        plt.show()
+    
+    return a

@@ -649,3 +649,7 @@ cycle_signal_frames_params = {
 video_params = {'step':5, # down sampling frames by this factor
                 'video_duration':30 # total video duration in seconds
                }
+
+slope_params = {
+    'power_params':power_params
+}
