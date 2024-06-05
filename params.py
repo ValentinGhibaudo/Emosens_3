@@ -567,6 +567,19 @@ cycle_signal_modulation_params = {
     'cycle_signal_params':cycle_signal_params,
 }
 
+erp_signal_params = {
+    'interp_artifact_params':interp_artifact_params,
+    'respiration_features_params':respiration_features_params,
+    'chans':eeg_chans,
+    'session_duration':session_duration,
+    'window_size_secs':10,
+    'start_window_size_before_transition_secs':5,
+}
+
+concat_erp_signal_params = {
+    'erp_signal_params':erp_signal_params
+}
+
 
 # Global concat of dataframes jobs params
 # odor_rating_params = {'subject_keys':subject_keys,
